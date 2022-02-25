@@ -1,0 +1,2 @@
+# ## TOR (Adjust the value of the path with that of the customPath parameter)
+* 30 19 * * * root "wget -q -O - "https://check.torproject.org/torbulkexitlist" > /root/running_scripts/iptables/torbulkexit.ip"

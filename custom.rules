@@ -1,0 +1,71 @@
+# ## (c) 2004-2022  Cybionet - Integration & Securite Systeme
+# ## Change: February 23, 2022
+
+
+# ############################################################################################
+# ## CUSTOM ALLOW RULES
+
+iptables -N ALLOWLIST
+iptables -A INPUT -j ALLOWLIST
+# ## Enter your ban rules here.
+# ##
+# ## Example:
+# ##    ANY:    iptables -A ALLOWLIST -s W.X.Y.Z/32 -j ALLOW
+# ##    TCP:    iptables -A ALLOWLIST -s W.X.Y.Z/32 -p tcp -m tcp -j ALLOW
+# ##    UDP:    iptables -A ALLOWLIST -s W.X.Y.Z/32 -p udp -m udp -j ALLOW
+# ##   ICMP:    iptables -A ALLOWLIST -s W.X.Y.Z/32 -p icmp -j ALLOW
+
+
+
+# ############################################################################################
+# ## CUSTOM BAN RULES
+
+iptables -N BANLIST
+iptables -A INPUT -j BANLIST
+# ## Enter your ban rules here.
+# ## Use "REJECT" when you want the other end to know the port is unreachable. Usually, all rules for connections inside your LAN should use REJECT. 
+# ## Use "DROP" for connections to hosts you don't want people to see. For the Internet, with the exception of ident on certain servers, connections from the Internet are usually DROP.
+# ##
+# ## Example: 
+# ## 	ANY:	iptables -A BANLIST -s W.X.Y.Z/32 -j DROP
+# ##	TCP:	iptables -A BANLIST -s W.X.Y.Z/32 -p tcp -m tcp -j DROP
+# ##	UDP:	iptables -A BANLIST -s W.X.Y.Z/32 -p udp -m udp -j DROP
+# ##   ICMP:	iptables -A BANLIST -s W.X.Y.Z/32 -p icmp -j DROP
+
+
+
+# ## Censys
+iptables -A INPUT -m iprange --src-range 162.142.125.0-162.142.125.255 -j LOG --log-prefix "IPTABLES: Censys 125: "
+iptables -A INPUT -m iprange --src-range 162.142.125.0-162.142.125.255 -j DROP
+
+iptables -A INPUT -m iprange --src-range 167.94.138.0-167.94.138.255 -j LOG --log-prefix "IPTABLES: Censys 138: "
+iptables -A INPUT -m iprange --src-range 167.94.138.0-167.94.138.255 -j DROP
+
+iptables -A INPUT -m iprange --src-range 167.248.133.0-167.248.133.255 -j LOG --log-prefix "IPTABLES: Censys 133: "
+iptables -A INPUT -m iprange --src-range 167.248.133.0-167.248.133.255 -j DROP
+
+# ## Rapid7 Sonar
+# ## 5.63.151.96/27
+iptables -A INPUT -m iprange --src-range 5.63.151.97-5.63.151.126 -j LOG --log-prefix "IPTABLES: Rapid7 Sonar 5: "
+iptables -A INPUT -m iprange --src-range 5.63.151.97-5.63.151.126 -j DROP
+
+# ## 71.6.233.0/24
+iptables -A INPUT -m iprange --src-range 71.6.233.1-71.6.233.254 -j LOG --log-prefix "IPTABLES: Rapid7 Sonar 71: "
+iptables -A INPUT -m iprange --src-range 71.6.233.1-71.6.233.254 -j DROP
+
+# ## 88.202.190.128/27
+iptables -A INPUT -m iprange --src-range 88.202.190.129-88.202.190.158 -j LOG --log-prefix "IPTABLES: Rapid7 Sonar 88: "
+iptables -A INPUT -m iprange --src-range 88.202.190.129-88.202.190.158 -j DROP
+
+# ## 146.185.25.160/27
+iptables -A INPUT -m iprange --src-range 146.185.25.161-146.185.25.190 -j LOG --log-prefix "IPTABLES: Rapid7 Sonar 146: "
+iptables -A INPUT -m iprange --src-range 146.185.25.161-146.185.25.190 -j DROP
+
+# ## 109.123.117.224/27
+iptables -A INPUT -m iprange --src-range 109.123.117.225-109.123.117.254 -j LOG --log-prefix "IPTABLES: Rapid7 Sonar 109: "
+iptables -A INPUT -m iprange --src-range 109.123.117.225-109.123.117.254 -j DROP
+
+
+# ## dnsscan.shadowserver.org
+iptables -A INPUT -m iprange --src-range 74.82.47.1-74.82.47.65 -j LOG --log-prefix "IPTABLES: Shadowserver 74: "
+iptables -A INPUT -m iprange --src-range 74.82.47.1-74.82.47.65 -j DROP

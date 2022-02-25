@@ -1,0 +1,2 @@
+# ## GEOIP
+* 30 19 * * * root /usr/sbin/geo-update.sh >/dev/null 2>&1

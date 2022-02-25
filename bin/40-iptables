@@ -1,0 +1,892 @@
+#! /bin/bash
+#set -x
+# ****************************************************************************
+# *
+# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# *
+# * File:               40-iptables
+# * Version:            1.1.21
+# *
+# * Comment:            Script to customize the IPv4 rules of a dynamic firewall interface.
+# *
+# * Date:   December 02, 2013
+# * Change: February 23, 2022
+# *
+# ****************************************************************************
+# *
+# * Dependancy: 
+# *   iptables-persistent or netfilter-persistent
+# *   xtables-addons-common
+# *   ipset
+# *   geoip-bin
+# *   geoip-database
+# *
+# *
+# *  apt-get install iptables-persistent xtables-addons-common ipset geoip-bin geoip-database
+# *
+# * **************************************************************************
+# *
+# * Location: /usr/share/netfilter-persistent/plugins.d/40-iptables
+# *
+# * chmod 500 /usr/share/netfilter-persistent/plugins.d/40-iptables
+# *
+# * CRON
+# * vim /etc/cron.d/torlistupdate
+# * # ## TOR (Adjust the value of the path with that of the customPath parameter)
+# * 30 19 * * * root "wget -q -O - "https://check.torproject.org/torbulkexitlist" > /root/running_scripts/iptables/torbulkexit.ip"
+# *
+# * GEOIP
+# * vim /etc/cron.d/geoipupdate
+# * 30 19 * * * root /usr/sbin/geo-update.sh
+# *
+# * cp geo-update.sh /usr/sbin/geo-update.sh
+# *
+# ****************************************************************************
+
+
+# ## Allows to be certain that the system is started properly.
+sleep 3
+
+
+# ############################################################################################
+# ## VARIABLES
+
+# ## Path where is located the custom rules file.
+declare -r customPath='/root/running_scripts/iptables'
+
+
+# ############################################################################################
+# ## CONFIGURATION
+
+# ## Force configuration of the script.
+# ## Value: enabled (true), disabled (false).
+readonly isConfigured='false'
+
+# ## Autodetect LAN IP address or set LAN variable. Autodetect does not work with netfilter-persistant.
+# ## Enable (1) or Disable (0 - Default).
+declare -ir AUTODETECTLAN=0
+declare -r LAN='W.X.Y.Z'
+
+# ## Restricted access to remote access and monitoring ports.
+declare -ir RESTRICT=0
+
+# ## Restricted IP addresses to access monitoring ports (Used if RESTRICT parameter has a value of "1").
+declare -r MONITORINGIP='W.X.Y.Z'
+
+# ## Restricted IP addresses to access remote access ports (Used if RESTRICT parameter has a value of "1").
+# ## Put space as delimiter.
+#declare -a AUTHORIZEDIP=(W.X.Y.Z)
+#declare -a AUTHORIZEDIP=(W.X.Y.Z A.B.C.D)
+
+# ## SSH port (Always enabled).
+declare -ir SSH=2222           # Cybionet TCP/2222
+                               # Default  TCP/22
+
+# ## VNC port (Disabled by default).
+declare -ir VNCX11=5900        # Default  TCP/5900
+
+# ## OPENVPN port (Disabled by default).
+declare -ir VPN=1194           # Cybionet TCP/443
+                               # Default  TCP/1194
+
+
+# ############################################################################################
+# ## SERVICES (INPUT)
+
+# ## Enable (1) or Disable (0) services port you want to use.
+
+declare -ir ICMP=1        # ETHERTYPE 0 and 8
+
+declare -ir HTTP=0        # TCP/80
+declare -ir HTTPS=0       # TCP/443
+declare -ir TOMCAT=0      # TCP/8080
+declare -ir FTP=0         # TCP/20,TCP/21
+
+declare -ir DNS=0         # TCP/53,UDP/53
+#declare -ir DNSSLAVE=0   # Go to "DNS SLAVE SERVER" section below.
+declare -ir RNDC=0        # TCP/953
+
+declare -ir NTP=0         # UDP/123
+
+declare -ir SMTP=0        # TCP/25
+declare -ir SMTPS=0       # TCP/465
+declare -ir SMTPAUTH=0    # Cybionet TCP/2525
+                	  # Default  TCP/587
+
+declare -ir POP=0         # TCP/110
+declare -ir POPS=0        # TCP/995
+declare -ir IMAP=0        # TCP/143
+declare -ir IMAPS=0       # TCP/993
+
+declare -ir SMB=0         # UDP/137,UDP/138,TCP/139,TCP/445
+
+declare -ir LDAP=0        # TCP/389
+declare -ir LDAPS=0       # TCP/636
+
+declare -ir SNMP=0        # UDP/161
+declare -ir ZABAGENT=0    # TCP/10050
+declare -ir ZABSERVER=0   # TCP/10051
+declare -ir ZABJAVAGW=0   # TCP/10052
+
+declare -ir VNC=0         # User specified
+
+
+# ############################################################################################
+# ## DNS SLAVE SERVER
+
+# ## Enable (1) or Disable (0).
+declare -ir DNSSLAVE=0    # TCP/53,UDP/53,TCP/953
+
+# ## DNS Slave Server.
+declare -r DNSSLV='W.X.Y.Z'
+#declare -a DNSSLV=(W.X.Y.Z A.B.C.D)
+
+
+# ############################################################################################
+# ## VIRTUAL INTERFACE
+
+# ## Enable (1) or Disable (0 - Default).
+declare -ir VIRTUALIP=0
+
+# ## Virtual IP interface.
+declare -r VIP='10.3.25.2/32'
+
+
+# ############################################################################################
+# ## VPN INTERFACE
+
+# ## Enable (1) or Disable (0 - Default).
+declare -ir OPENVPN=0     # User specified
+
+# ## VPN interface.
+# ## tap+ (Layer 2 - Ethernet bridging) 
+# ## tun+ (Layer 3 - Routed IP tunnel)
+declare -r TUNNEL='tap+'
+
+
+# ############################################################################################
+# ## SLA FOR VPS
+
+# ## Enable (1) or Disable (0).
+declare -ir VPSSLA=0
+
+# ## SLA Server (UNUSED).
+#declare -r SLASVC='W.X.Y.Z'
+#declare -a SLASVC=(W.X.Y.Z A.B.C.D)
+
+
+# ############################################################################################
+# ## EXTRA PROTECTION
+# ## WARNING: Additonnal configuration on the system is nedded. Please read the instructions.
+
+# ## GEOIP
+ # ## Allowed countries and drop others countries.
+ # ## Enable (1) or Disable (0).
+ declare -ir GEOIPALLOW=0
+
+ # ## Declare country (Two letter country code ISO-3166).
+ declare -r allowCountry='CA'
+
+ # ## Denied countries.
+ # ## Enable (1) or Disable (0).
+ declare -ir GEOIPDENY=1
+
+ # ## Declare country (Two letter country code ISO-3166).
+ declare -a denyCountry=(BG BR IN KR PL RU SC VN)
+ # ##(AD AE AL AR AZ BA BD BG BJ BR BT BY BZ CL CO CZ DE DZ EE EG GE GH HR IN IQ IR JO KE KP KR KZ KW LB LT LY MO MZ NG NP PA PK PL PS RO RS RU RW SA SC SD SI SK SY TG TN TR UA UG UY UZ VN ZA ZM
+ # ## NOTE: The TOR EXIT NODES list for the Tor Project is located in Germany (DE).
+ # ## NOTE: Country code ZZ is for "Unknown or unspecified country" including local IP (RFC1918).
+
+# ## TOR EXIT NODES.
+ # ## Enable (1) or Disable (0).
+ # ## To verify if you server support ipset, try: ipset list.
+ declare -ir TORDENY=0
+
+# ## SHODAN.
+ # ## Enable (1) or Disable (0).
+ declare -ir SHODANDENY=0
+
+# ## DENY LIST.
+ # ## Enable (1) or Disable (0).
+ declare -ir REDLIST=1
+
+
+# ############################################################################################
+# ############################################################################################
+# ## Do not change anything after this line.
+# ############################################################################################
+# ############################################################################################
+
+# ## Check if the script is configured.
+if [ "${isConfigured}" == 'false' ] ; then
+ echo -n -e '\e[38;5;208mWARNING: Customize the settings to match your environment. Then set the "isConfigured" variable to "true".\n\e[0m'
+ exit 0
+fi
+
+# ############################################################################################
+# ## INTERFACES
+
+# ## Definition of the interfaces.
+if [ "${AUTODETECTLAN}" -eq 1 ]; then
+    INET=$(ip addr | grep 'state UP' | cut -d ':' -f 2 | sed 's/ //g' | head -n 1)
+  declare -r INET
+
+  LAN=$(ip address show "${INET}" | grep -F 'inet ' | cut -d ' ' -f 6 | head -1 | cut -d '/' -f 1)
+  declare -r LAN
+fi
+
+
+# ############################################################################################
+# ## GENERAL CONFIGURATION
+
+# ## Basic rules.
+iptables -F
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+
+# ## Loopback rules.
+iptables -A INPUT -i lo -j ACCEPT
+
+
+# ############################################################################################
+# ## TEMPORARY RULES
+
+
+# ############################################################################################
+# ## SECURITY RULES
+
+if [ "${DNS}" -eq 1 ]; then
+  # ## BLOCK DNS QUERIES
+  # ## To convert the domain name in hexadecimal string.
+  # ## echo "0d$(echo -n "example.com" | xxd -p)00"
+  # ## echo -n 'example.com' | od -A n -t x1 | sed 's/2e/02/g' | sed 's/ //g' | sed 's/^/od/' | sed 's/$/00/'
+  # ## To reverse the conversion to see the domain name in plain text.
+  # ## echo -n "0d6578616d706c652e636f6d00" | xxd -r -p
+
+  # Block DNS queries for ironmen-style.ru
+  iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d69726f6e6d656e2d7374796c6502727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q ironmen-style.ru"
+
+  # Block DNS queries for vizit-gamepro.ru
+  iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d76697a69742d67616d6570726f02727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q vizit-gamepro.ru"
+
+  # Block DNS queries for cpsc.gov
+  iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6370736302676f7600|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q cpsc.gov"
+
+  # Block DNS queries for leth.cc
+  iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6c65746802636300|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q leth.cc"
+
+  # Block DNS queries for hitwh.edu.cn
+  iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d68697477680265647502636e00|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q hitwh.edu.cn"
+
+  # Block DNS queries for isc.com.
+  #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|00000000000103697363036f726700|" --algo bm --to 65535 --dport 53 -j DROP
+
+  # Block DNS queries for ripe.net
+  #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0000000000010472697065036e6574|" --algo bm --to 65535 --dport 53 -j DROP
+
+  # Block recursive DNS queries (flags 0X0100).
+  #iptables -A INPUT -d "${LAN}" -p udp --dport 53 -m u32 --u32 "0>>22&0x3C@10=0x01000001" -j DROP
+
+  # ## PizzaSEO amplification DNS attack requests.
+  # ## The below rule will search inbound DNS server traffic for a DNS query that starts with "pizzaseo" and log the traffic.
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 53 -m string --string "pizzaseo" --algo kmp --from 41 --to 48 -j LOG --log-prefix "IPTABLES: PizzaSEO ATTACK (UDP): "
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 53 -m string --string "pizzaseo" --algo kmp --from 41 --to 48 -j LOG --log-prefix "IPTABLES: PizzaSEO ATTACK (TCP): "
+
+  # ## The below rule examines the IP header to find the start of UDP's data, and examines DNS flags for a refused response. When found the traffic it is logged.
+  #iptables -A OUTPUT -s YOUR_DNS_SERVER_IP_ADDRESS -p udp -m udp --sport 53 -m u32 --u32 "0x0>>0x16&0x3c@0x8&0x8005=0x8005" -j LOG --log-prefix "IPTABLES: OUTBOUND DNS Query Refused Response: "
+fi
+
+# ## ####################################
+# ## DEFAULT
+# ## To view IP in the default list,
+# ## cat /proc/net/xt_recent/DEFAULT
+# ## To remove a specific IP in the default list,
+# ## echo -W.X.Y.Z >/proc/net/xt_recent/DEFAULT
+# ## Restart the SSHD service, if it is the impacted service.
+
+# ## "--limit" default is 3/hour.
+# ## "--limit-burst" default is 5.
+
+# ## RST FLOOD packets, smurf attack Rejection.
+#iptables -A INPUT -p tcp -m tcp --tcp-flags RST RST -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: RST FLOOD: "
+#iptables -A INPUT -p tcp -m tcp --tcp-flags RST RST -m limit --limit 2/second --limit-burst 2 -j ACCEPT
+
+# ## SMURF attack.
+iptables -A INPUT -p icmp -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: SMURF: "
+iptables -A INPUT -p icmp -m limit --limit 2/second --limit-burst 2 -j ACCEPT
+
+# ## NULL packets.
+iptables -A INPUT -p tcp --tcp-flags ALL NONE -j LOG --log-prefix "IPTABLES: NULL PAQUET: "
+iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+
+# ## SYN FLOOD attack (RFC4987).
+iptables -A INPUT -p tcp -m state --state NEW -m recent --update --seconds 60 --hitcount 20 -j LOG --log-prefix "IPTABLES: SYN FLOOD: "
+iptables -A INPUT -p tcp -m state --state NEW -m recent --update --seconds 60 --hitcount 20 -j DROP
+#iptables -A INPUT -p tcp -m state --state NEW -m recent --set -j ACCEPT
+#iptables -A INPUT -p tcp --syn -m limit --limit 1/s --limit-burst 3 -j RETURN
+#iptables -A INPUT -p tcp -m state --state NEW -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: SYN FLOOD Attack: "
+#iptables -A INPUT -p tcp -m state --state NEW -m limit --limit 2/second --limit-burst 2 -j ACCEPT
+
+# ## SYN FLOOD attack - MSS (RFC4987).
+iptables -t mangle -A PREROUTING -p tcp -m tcp -m state --state NEW -m tcpmss ! --mss 536:65535 -j LOG --log-prefix "IPTABLES: SYN FLOOD MSS: "
+iptables -t mangle -A PREROUTING -p tcp -m tcp -m state --state NEW -m tcpmss ! --mss 536:65535 -j DROP
+#iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+
+# ## XMAS paquets attack.
+iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j LOG --log-prefix "IPTABLES: XMAS Paquet: "
+iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j DROP
+
+# INVALID packets
+iptables -A INPUT -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID INPUT: "
+iptables -A INPUT -m state --state INVALID -j DROP
+
+iptables -A FORWARD -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID FORWARD: "
+iptables -A FORWARD -m state --state INVALID -j DROP
+
+iptables -A OUTPUT -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID OUTPUT: "
+iptables -A OUTPUT -m state --state INVALID -j DROP
+
+
+# ## Reject is a syn-flood attack.
+#iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+
+# ## Block Invalid Packets (experimental)
+#iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
+
+# ## Block New Packets That Are Not SYN (experimental)
+#iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP
+
+# ## Block Uncommon MSS Values (experimental)
+#iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+
+
+# ## ####################################
+# ## PORTSSH
+# ## To view IP in the portssh list,
+# ## cat -n /proc/net/xt_recent/portssh
+# ## cat /proc/net/xt_recent/portssh | awk -F "=" {'print $2'} | awk -F " " {'print $1'} | sort
+# ## To remove a specific IP in the portssh list,
+# ## echo -W.X.Y.Z >/proc/net/xt_recent/portssh
+
+# ## Rate-limit incoming SSH connections.
+# ## (Limit of 10 connection attempts within 60 seconds).
+iptables -A INPUT -d "${LAN}" -p tcp --dport "${SSH}" -m conntrack --ctstate NEW -m recent --name portssh --set
+iptables -A INPUT -d "${LAN}" -p tcp --dport "${SSH}" -m conntrack --ctstate NEW -m recent --name portssh --update --seconds 60 --hitcount 10 -j DROP
+
+# Protecting portssh (/proc/self/net/xt_recent/portssh)
+# ## Attacking IP will be locked for 24 hours (3600 x 24 = 86400 Seconds).
+#iptables -A INPUT -m recent --name portssh --rcheck --seconds 86400 -j DROP
+#iptables -A FORWARD -m recent --name portssh --rcheck --seconds 86400 -j DROP
+
+# ## Remove attacking IP after defined seconds.
+iptables -A INPUT -m recent --name portssh --remove
+iptables -A FORWARD -m recent --name portssh --remove
+
+
+# ## ####################################
+# ## PORTSCAN
+# ## To view IP in the portscan list,
+# ## cat -n /proc/net/xt_recent/portscan
+# ## cat /proc/net/xt_recent/portscan | awk -F "=" {'print $2'} | awk -F " " {'print $1'} | sort
+# ## To remove a specific IP in the portscan list,
+# ## echo -W.X.Y.Z >/proc/net/xt_recent/portscan
+
+if [ "${SMB}" -eq 1 ]; then
+  # These rules add scanners to the portscan list, and log the attempt.
+  iptables -A INPUT -p tcp -m tcp --dport 139 -m recent --name portscan --set -j LOG --log-prefix "IPTABLES: Portscan INPUT: "
+  iptables -A INPUT -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP
+
+  iptables -A FORWARD -p tcp -m tcp --dport 139 -m recent --name portscan --set -j LOG --log-prefix "IPTABLES: Portscan FORWARD: "
+  iptables -A FORWARD -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP
+fi
+
+# Protecting portscans (/proc/self/net/xt_recent/portscan)
+# ## Attacking IP will be locked for 24 hours (3600 x 24 = 86400 seconds).
+iptables -A INPUT -m recent --name portscan --rcheck --seconds 86400 -j DROP
+iptables -A FORWARD -m recent --name portscan --rcheck --seconds 86400 -j DROP
+
+# ## Remove attacking IP after defined seconds.
+iptables -A INPUT -m recent --name portscan --remove
+iptables -A FORWARD -m recent --name portscan --remove
+
+
+# ## !!!!!!!!!!!!!!!! BUG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ## Différence entre /proc/self/net/xt_recent/portscan vs /proc/net/xt_recent/portscan
+
+
+# ############################################################################################
+# ## EXTRA PROTECTION RULES
+
+# ## GEOIP
+GEOIP_PKG=$(dpkg-query -W --showformat='${Status}\n' "xtables-addons-common" | grep -c "install ok installed")
+
+if [ "${GEOIP_PKG}" -eq 0 ]; then
+  echo -e "ERROR: GEOIP extra protection security skipped. Missing dependancy (xtables-addons-common or geoip-bin)."
+else
+  # ## GEOIP ALLOW.
+  if [ "${GEOIPALLOW}" -eq 1 ]; then
+    # ## GeoIP.
+    #iptables -A INPUT -m geoip ! --source-country CA  -j LOG --log-prefix "IPTABLES: Country Restriction: "
+    #iptables -A INPUT -m geoip ! --source-country CA  -j DROP
+
+    if [ "${RNDC}" -eq 1 ]; then
+      # ## GeoIP - RNDC
+      iptables -A INPUT -p tcp -m tcp --dport 953 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country RNDC: "
+      iptables -A INPUT -p tcp -m tcp --dport 953 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${SMTPAUTH}" -eq 1 ]; then
+      # ## GeoIP - SMTP AUTH
+      iptables -A INPUT -p tcp -m tcp --dport 2525 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP AUTH: "
+      iptables -A INPUT -p tcp -m tcp --dport 2525 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${POP}" -eq 1 ]; then
+      # ## GeoIP - POP3
+      iptables -A INPUT -p tcp -m tcp --dport 110 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country POP: "
+      iptables -A INPUT -p tcp -m tcp --dport 110 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${POPS}" -eq 1 ]; then
+      # ## GeoIP - POP3/S
+      iptables -A INPUT -p tcp -m tcp --dport 995 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country POP/S: "
+      iptables -A INPUT -p tcp -m tcp --dport 995 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${IMAP}" -eq 1 ]; then
+      # ## GeoIP - IMAP
+      iptables -A INPUT -p tcp -m tcp --dport 143 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country IMAP: "
+      iptables -A INPUT -p tcp -m tcp --dport 143 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${IMAPS}" -eq 1 ]; then
+      # ## GeoIP - IMAP/S
+      iptables -A INPUT -p tcp -m tcp --dport 993 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country IMAP/S: "
+      iptables -A INPUT -p tcp -m tcp --dport 993 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    #if [ "${SMTPS}" -eq 1 ]; then
+    #  # ## GeoIP - SMTP/S
+    #  iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP/S: "
+    #  iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j DROP
+    #fi
+
+    #if [ "${HTTP}" -eq 1 ]; then
+    #  # ## GeoIP - HTTP
+    #  iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTP: "
+    #  iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j DROP
+    #fi
+
+    #if [ "${HTTPS}" -eq 1 ]; then
+    #  # ## GeoIP - HTTPS
+    #  iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTPS: "
+    #  iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j DROP
+    #fi
+  fi
+
+  # ## GEOIP DENY.
+  if [ "${GEOIPDENY}" -eq 1 ]; then
+    echo "DEBUG: GEOIPDENY"
+    iptables -N GEOIPDENY
+    iptables -A INPUT -j GEOIPDENY
+
+    # ## Converting to array, because the iptables geoip has a fifteen country code limitation.
+    for denyCC in "${denyCountry[@]}"
+    do
+    #echo "DEBUG: ${denyCC}"
+      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC} :"
+      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j DROP
+    done
+  fi
+fi
+
+# ## TOR - Tor Exit Nodes.
+if [ "${TORDENY}" -eq 1 ]; then
+
+  # ## Check if IPSet services is installed.
+  if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then
+    echo -e "\e[33;1;208mWARNING:\e[0m TORDENY extra protection security skipped. Missing dependancy (ipset)."
+  else
+    # ## Else, populate the Tordeny node.
+    torList=$(ipset list tor-nodes | wc -l)
+
+    if [ "${torList}" -le 2 ]; then
+      ipset create tor-nodes iphash
+    fi
+
+    # ## Check if the custom path exist. If it does not exist, create it.
+    if [ ! -d "${customPath}" ]; then
+      mkdir -p "${customPath}"
+    fi
+
+    # ## Check if the shodan ip list file exist.
+    if [ ! -f "${customPath}"/torbulkexit.ip ]; then
+      touch "${customPath}"/torbulkexit.ip
+    fi
+
+    #cat "${customPath}"/torbulkexit.ip | while read -r TORIP; do
+    while IFS= read -r TORIP; do echo "${TORIP%?}";
+      ipset -q -A tor-nodes "${TORIP}"
+    done < "${customPath}"/torbulkexit.ip
+
+    echo "DEBUG: TORDENY"
+    iptables -N TORDENY
+    iptables -A INPUT -j TORDENY
+
+    iptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR: "
+    iptables -A TORDENY -m set --match-set tor-nodes src -j DROP
+
+#    iptables -A INPUT -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR INPUT: "
+#    iptables -A INPUT -m set --match-set tor-nodes src -j DROP
+
+#    iptables -A OUTPUT -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR INPUT: "
+#    iptables -A OUTPUT -m set --match-set tor-nodes src -j DROP
+  fi
+fi
+
+# ## SHODAN.
+if [ "${SHODANDENY}" -eq 1 ]; then
+
+  # ## Check if IPSet services is installed.
+  if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then
+    echo -e "\e[33;1;208mWARNING:\e[0m SHODAN extra protection security skipped. Missing dependancy (ipset)."
+  else
+  # ## Else, populate the Shodan node.
+    shodanList=$(ipset list shodan-nodes | wc -l)
+
+    if [ "${shodanList}" -le 2 ]; then
+      ipset create shodan-nodes iphash
+    fi
+
+    # ## Check if the custom path exist. If it does not exist, create it.
+    if [ ! -d "${customPath}" ]; then
+      mkdir -p "${customPath}"
+    fi
+
+    # ## Check if the shodan ip list file exist.
+    if [ ! -f "${customPath}"/shodan.ip ]; then
+      touch "${customPath}"/shodan.ip
+    fi
+
+    #cat "${customPath}"/shodan.ip | while read -r SHODANIP; do
+    while IFS= read -r SHODANIP; do echo "${SHODANIP%?}";
+      ipset -q -A shodan-nodes "${SHODANIP}"
+    done < "${customPath}"/shodan.ip
+
+    echo "DEBUG: SHODAN"
+    iptables -N SHODAN
+    iptables -A INPUT -j SHODAN
+
+    iptables -A SHODAN -m set --match-set shodan-nodes src -j LOG --log-prefix "IPTABLES: SHODAN: "
+    iptables -A SHODAN -m set --match-set shodan-nodes src -j DROP
+
+#    iptables -A OUTPUT -m set --match-set shodan-nodes src -j LOG --log-prefix "IPTABLES: SHODAN: "
+#    iptables -A OUTPUT -m set --match-set shodan-nodes src -j DROP
+  fi
+fi
+
+# ## REDLIST.
+if [ "${REDLIST}" -eq 1 ]; then
+
+  # ## Check if IPSet services is installed.
+  if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then
+    echo -e "\e[33;1;208mWARNING:\e[0m REDLIST extra protection security skipped. Missing dependancy (ipset)."
+  else
+  # ## Else, populate the Redlist node.
+    redList=$(ipset list redlist-nodes | wc -l)
+
+    if [ "${redList}" -le 2 ]; then
+      ipset create redlist-nodes iphash
+    fi
+
+    # ## Check if the custom path exist. If it does not exist, create it.
+    if [ ! -d "${customPath}" ]; then
+      mkdir -p "${customPath}"
+    fi
+
+    # ## Check if the redlist ip list file exist.
+    if [ ! -f "${customPath}/redlist.ip" ]; then
+      touch "${customPath}/redlist.ip"
+    fi
+
+    #cat "${customPath}"/redlist.ip | while read -r REDIP; do
+    while IFS= read -r REDIP; do echo "${REDIP%?}";
+      ipset -q -A redlist-nodes "${REDIP}"
+    done < "${customPath}"/shodan.ip
+
+    echo "DEBUG: REDLIST"
+    iptables -N REDLIST
+    iptables -A INPUT -j REDLIST
+
+    iptables -A REDLIST -m set --match-set redlist-nodes src -j LOG --log-prefix "IPTABLES: REDLIST: "
+    iptables -A REDLIST -m set --match-set redlist-nodes src -j DROP
+
+#    iptables -A OUTPUT -m set --match-set redlist-nodes src -j LOG --log-prefix "IPTABLES: REDLIST: "
+#    iptables -A OUTPUT -m set --match-set redlist-nodes src -j DROP
+  fi
+fi
+
+
+# ############################################################################################
+# ## CUSTOM RULES
+
+# ##
+echo "DEBUG: CUSTOM"
+iptables -N CUSTOM
+iptables -A INPUT -j CUSTOM
+
+# ## Check if the custom path exist. If it does not exist, create it.
+if [ ! -d "${customPath}" ]; then
+  mkdir -p "${customPath}"
+fi
+
+# ## Check if the custom rules file exist.
+if [ ! -f "${customPath}"/custom.rules ]; then
+  echo "# Enter your custom rules here." > "${customPath}"/custom.rules
+fi
+
+# ## Load custom rules.
+source "${customPath}"/custom.rules
+
+
+# ############################################################################################
+# SERVICE CONFIGURATION
+
+# ## Virtual interface rules.
+if [ "${VIRTUALIP}" -eq 1 ]; then
+  iptables -A INPUT -d "${VIP}" -p tcp -m tcp --dport "${SSH}" -j ACCEPT
+  iptables -A INPUT -p icmp -d "${VIP}" -j ACCEPT
+
+  # ## Last drop rule at the end of this script.
+fi
+
+# ## SSH service.
+if [ "${RESTRICT}" -eq 1 ]; then
+  for allowIp in "${AUTHORIZEDIP[@]}"; do
+    iptables -A INPUT -s "${allowIp}" -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -j ACCEPT
+  done
+else
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -j ACCEPT
+fi
+
+# ## VNC rules.
+if [ "${VNC}" -eq 1 ]; then
+  if [ "${RESTRICT}" -eq 1 ]; then
+    for allowIp in "${AUTHORIZEDIP[@]}"
+    do
+      iptables -A INPUT -s "${allowIp}" -d "${LAN}" -p tcp -m tcp --dport "${VNCX11}" -j ACCEPT
+    done
+  else
+    iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport "${VNCX11}" -j ACCEPT
+  fi
+fi
+
+# ## !!!!!!!!!! BUG A VERIFIER SI LA DEUXIEME LIGNE NE DOIT PAS ETRE UN DROP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ## ICMP rules.
+if [ "${ICMP}" -eq 1 ]; then
+  iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" --icmp-type echo-request -j ACCEPT
+  iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" -j ACCEPT
+fi
+
+
+# ## Samba rules.
+if [ "${SMB}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 137 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 138 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -m state --state NEW -m tcp -p tcp --dport 139 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+fi
+
+# ## HTTP rules.
+if [ "${HTTP}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 80 -j ACCEPT
+fi
+
+# ## HTTPS rules.
+if [ "${HTTPS}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 443 -j ACCEPT
+fi
+
+# ## TOMCAT/JIRA rules.
+if [ "${TOMCAT}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 8080 -j ACCEPT
+fi
+
+# ## FTP rules.
+if [ "${FTP}" -eq 1 ]; then
+  #iptables -A INPUT -d "${LAN}" -p tcp -m tcp --match multiport --dports 20,21 -j ACCEPT
+  #iptables -A INPUT -d "${LAN}" -p tcp -m tcp --match multiport --dports 49152,65534 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp --dport 21 -m state --state ESTABLISHED,NEW -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp --dport 20 -m state --state ESTABLISHED -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp --dport 50000:59000 -m state --state RELATED,ESTABLISHED,NEW -j ACCEPT
+fi
+
+# ## NTP rules.
+if [ "${NTP}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 123 -j ACCEPT
+fi
+
+# ## SNMP rules.
+if [ "${SNMP}" -eq 1 ]; then
+ if [ "${RESTRICT}" -eq 1 ]; then
+   iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p udp -m udp --dport 161 -j ACCEPT
+ else
+   iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 161 -j ACCEPT
+ fi
+fi
+
+# ## DNS rules.
+if [ "${DNS}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
+fi
+
+# ## DNS Slave rules.
+if [ "${DNSSLAVE}" -eq 1 ]; then
+  for ipSlave in ${DNSSLV[*]}
+  do
+    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
+    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
+
+    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
+  done
+fi
+
+# ## RNDC rules.
+if [ "${RNDC}" -eq 1 ]; then
+  iptables -A INPUT -s 149.56.128.12 -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
+fi
+
+# ## SMTP rules.
+if [ "${SMTP}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 25 -j ACCEPT
+fi
+
+# ## SMTP AUTH rules.
+if [ "${SMTPAUTH}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 2525 -j ACCEPT
+fi
+
+# ## SMTP/S rules.
+if [ "${SMTPS}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 465 -j ACCEPT
+fi
+
+# ## IMAP rules.
+if [ "${IMAP}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 143 -j ACCEPT
+fi
+
+# ## IMAP/S rules.
+if [ "${IMAPS}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 993 -j ACCEPT
+fi
+
+# ## POP rules.
+if [ "${POP}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 110 -j ACCEPT
+fi
+
+# ## POP/S rules.
+if [ "${POPS}" -eq 1 ]; then
+  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 995 --j ACCEPT
+fi
+
+# ## LDAP rules.
+if [ "${LDAP}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 389 --j ACCEPT
+fi
+
+# ## UDP NECESSAIRE ?????????????????????????????????????????
+# ## LDAP/S rules.
+if [ "${LDAPS}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 636 --j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 636 --j ACCEPT
+fi
+
+
+# ## ZABBIX AGENT rules.
+if [ "${ZABAGENT}" -eq 1 ]; then
+  if [ "${RESTRICT}" -eq 1 ]; then
+    iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
+  else
+   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
+  fi
+fi
+
+# ## ZABBIX SERVER rules.
+if [ "${ZABSERVER}" -eq 1 ]; then
+ if [ "${RESTRICT}" -eq 1 ]; then
+   iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10051 --j ACCEPT
+ else
+   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10051 --j ACCEPT
+ fi
+fi
+
+# ## ZABBIX JAVA GATEWAY rules.
+if [ "${ZABJAVAGW}" -eq 1 ]; then
+ if [ "${RESTRICT}" -eq 1 ]; then
+  iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
+ else
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
+ fi
+fi
+
+
+# ## OPENVPN SERVER rules.
+if [ "${OPENVPN}" -eq 1 ]; then
+
+  # ## Allow the UDP connection on the openvpn port.
+  iptables -A INPUT -i "${INET}" -m state --state NEW -p udp --dport "${VPN}" -j ACCEPT
+
+  # ## Allow TUN/TAP interface connections to OpenVPN server.
+  iptables -A INPUT -i "${TUNNEL}" -j ACCEPT
+
+  # ## Allow TUN/TAP interface connections to be forwarded through other interfaces
+  iptables -A FORWARD -i "${TUNNEL}" -j ACCEPT
+  iptables -A FORWARD -i "${TUNNEL}" -o "${INET}" -m state --state RELATED,ESTABLISHED -j ACCEPT
+  iptables -A FORWARD -i "${INET}" -o "${TUNNEL}" -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+  # ## If your default iptables OUTPUT value is not ACCEPT.
+  # iptables -A OUTPUT -o "${TUNNEL}" -j ACCEPT
+fi
+
+# ## VPS SLA rules.
+if [ "${VPSSLA}" -eq 1 ]; then
+  iptables -A INPUT -s "${SLA}" -d "${LAN}" -p tcp -m tcp -j ACCEPT
+fi
+
+
+# ## For debug purpose only.
+# nc -l 0.0.0.0 -p 1300
+#iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 1300 -j ACCEPT
+
+
+# ############################################################################################
+# ## LAST RULES
+
+# ## Communication rules already established.
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# ## Needed if you uses Virtual interface.
+if [ "${VIRTUALIP}" -eq 1 ]; then
+  iptables -A INPUT -d "${VIP}" -p tcp -m tcp -j DROP
+
+  # ## Deny rules (Needed if you uses Virtual interface).
+  #iptables -A INPUT -d "${LAN}" -p tcp -m tcp -j DROP
+fi
+
+
+# ############################################################################################
+# ## LOG PARAMETERS
+
+# Audit rules.
+#echo "DEBUG: LOGGING"
+iptables -N LOGGING
+iptables -A INPUT -j LOGGING
+iptables -A OUTPUT -j LOGGING
+#iptables -A LOGGING -m limit --limit 2/min -j LOG --log-prefix "IPTABLES: Limit: " --log-level 4
+#iptables -A LOGGING -j DROP
+
+# ## END

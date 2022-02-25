@@ -1,0 +1,103 @@
+#! /bin/bash -e
+#set -x
+# ****************************************************************************
+# *
+# * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
+# *
+# * File:               60-ip6tables.sh
+# * Version:            1.1.2
+# *
+# * Comment:            Script to customize the IPv6 rules of firewall.
+# *
+# * Creation: December 02, 2013
+# * Change:   November 27, 2021
+# *
+# ****************************************************************************
+# *
+# * Location: /usr/share/netfilter-persistent/plugins.d/60-ip6tables.sh
+# *
+# * chmod 500 /usr/share/netfilter-persistent/plugins.d/60-ip6tables.sh
+# *
+# ****************************************************************************
+
+# Allows to be certain that the system is started properly.
+sleep 3
+
+
+# ############################################################################################
+# ## INTERFACES
+
+# ## Definition of interfaces.
+declare -r LAN6='0000:0000:000:0000::0aaa/128'
+
+
+# ############################################################################################
+# ## GENERAL CONFIGURATION
+
+# ## Basic rules.
+ip6tables -F
+ip6tables -P INPUT DROP
+ip6tables -P FORWARD DROP
+ip6tables -P OUTPUT ACCEPT
+
+# ## Loopback rules.
+ip6tables -A INPUT -s ::1 -d ::1 -j ACCEPT
+
+
+# ############################################################################################
+# ## TEMPORAIRY RULES
+
+
+
+# ############################################################################################
+# ## SERVICES (INPUT)
+
+# ## Disable(0) or Enable (1) services port you want to use.
+
+declare -ir ICMP=0        # ETHERTYPE 0 and 8
+
+
+# ############################################################################################
+# ## SERVICE CONFIGURATION (INPUT)
+# ## Rules of service.
+
+# ## ICMP rules.
+if [ "${ICMP}" -eq 1 ]; then
+  ip6tables -A INPUT -p icmp -s 0/0 -d "${LAN6}" --icmp-type echo-request -j ACCEPT
+  ip6tables -A INPUT -p icmp -s 0/0 -d "${LAN6}" -j ACCEPT
+fi
+
+
+# ############################################################################################
+# ## SERVICE CONFIGURATION (OUTPUT)
+
+# ## ICMP rules.
+#ip6tables -A INPUT -p icmpv6 -d ${LAN6} -j ACCEPT
+ip6tables -A OUTPUT -p icmpv6 --icmpv6-type destination-unreachable -j ACCEPT
+ip6tables -A OUTPUT -p icmpv6 --icmpv6-type packet-too-big -j ACCEPT
+ip6tables -A OUTPUT -p icmpv6 --icmpv6-type time-exceeded -j ACCEPT
+ip6tables -A OUTPUT -p icmpv6 --icmpv6-type parameter-problem -j ACCEPT
+
+# ## DNS rules.
+ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+ip6tables -A OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+
+
+# ############################################################################################
+# ## LAST RULES
+
+# ## Communication rules already established.
+ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+
+# ############################################################################################
+# ## LOG PARAMETERS
+
+# ## Audit rules.
+ip6tables -N LOGGING6
+ip6tables -A INPUT -j LOGGING6
+ip6tables -A OUTPUT -j LOGGING6
+#ip6tables -A LOGGING6 -m limit --limit 2/min -j LOG --log-prefix "IP6TABLES: Limit" --log-level 4
+
+
+# ## END
