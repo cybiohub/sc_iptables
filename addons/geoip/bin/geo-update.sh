@@ -1,15 +1,16 @@
 #! /bin/bash
 #set -x
 # * **************************************************************************
+# *
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               geo-update.sh
-# * Version:            0.1.1
+# * Version:            1.0.0
 # *
-# * Comment:            Tool to configure install geoip for iptables.
+# * Comment:            Tool to populate Geoip databases for iptables.
 # *
-# * Date: September 07, 2021
-# * Modification: February 23, 2022
+# * Creation: September 07, 2021
+# * Change:   February 23, 2022
 # *
 # * **************************************************************************
 # * chmod 500 geo-update.sh
@@ -33,7 +34,7 @@ declare -i timeOut=5
 function checkPackage() {
  APPDEP="${1}"
  if ! dpkg-query -s "${APPDEP}" > /dev/null 2>&1; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m It_geoip is not configured. Missing package ${APPDEP}."
+   echo -e "\e[34;1;208mINFORMATION:\e[0m xt_geoip is not configured. Missing package ${APPDEP}."
    exit 0
  fi
 }

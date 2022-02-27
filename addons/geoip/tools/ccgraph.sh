@@ -1,5 +1,6 @@
 #! /bin/bash
 # * **************************************************************************
+# *
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               ccgraph.sh

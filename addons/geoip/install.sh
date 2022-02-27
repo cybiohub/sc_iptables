@@ -1,19 +1,45 @@
 #! /bin/bash
 #set -x
 # * **************************************************************************
+# *
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            0.1.1
+# * Version:            1.0.0
 # *
-# * Comment:            Tool to configure install geoip for iptables.
+# * Comment:            Tool to configure install Geoip for iptables.
 # *
-# * Date: September 07, 2021
-# * Modification: February 23, 2022
+# * Creation: September 07, 2021
+# * Change:   February 23, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
 # ****************************************************************************
+
+
+#############################################################################################
+# ## VARIABLES
+
+# ## Retrieval of the current year.
+appYear=$(date +%Y)
+
+# ## Application informations.
+appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
+
+
+#############################################################################################
+# ## VERIFICATION
+
+# ## Check if the script are running with sudo or under root user.
+if [ "${EUID}" -ne 0 ] ; then
+  echo -e "\n\e[34m${appHeader}\e[0m"
+  printf '%.s─' $(seq 1 "$(tput cols)")
+  echo -e "\n\n\n\e[33mCAUTION: This script must be run with sudo or as root.\e[0m"
+  exit 0
+else
+  echo -e "\n\e[34m${appHeader}\e[0m"
+  printf '%.s─' $(seq 1 "$(tput cols)")
+fi
 
 
 # #################################################################
@@ -58,6 +84,8 @@ function geoipCron() {
 
 function xtGeoipDep() {
  # ## xt_tables module for iptables.
+ echo -e "\tInstallation of xtables-addons-common package."
+
  apt-get install xtables-addons-common
  echo 'xt_geoip' > /etc/modules-load.d/xt_geoip.conf
  echo -e "\e[38;208mWARNING: A system restart is required.\e[0m"
@@ -75,6 +103,7 @@ function xtGeoipDep() {
 
 function xtGeoipRep() {
  if [ ! -d "/usr/share/xt_geoip" ]; then
+   echo -e "\tCreation of Geoip directory."
    mkdir /usr/share/xt_geoip
  fi
 }
@@ -89,7 +118,6 @@ function ccFilesCheck() {
 }
 
 function xtGeoipCheck() {
- #xtModule=$(cat /proc/net/ip_tables_matches | grep geoip)
  xtModule=$(grep geoip /proc/net/ip_tables_matches)
  if [ ! "${xtModule}" == "geoip" ]; then
    echo -e '\e[31;208mERROR: xt_geoip module not loaded.\e[0m\ Check with "lsmod | grep xt_goip".'
@@ -101,15 +129,18 @@ function xtGeoipCheck() {
 # ## EXECUTION
 
 # ## Geoip installation.
+echo -e "\n\e[34m[GEOIP]\e[0m"
 geoipInstall
 geoipDep
 
 # ## XT_Geoip installation.
+echo -e "\n\e[34m[XT_GEOIP]\e[0m"
 xtGeoipDep
 xtGeoipRe
 xtGeoipCheck
 
 # ## Update Mecanism
+echo -e "\n\e[34m[GEOIP DATABASE]\e[0m"
 geoipUpd
 geoipCron
 ccFilesCheck
@@ -119,7 +150,8 @@ ccFilesCheck
 # ## EXAMPLE
 
 # ## Example.
-echo 'Example: When adjusting the country code, use these two lines. The first line for logs and the second for dropping.'
+echo -e "\n\e[34m[EXAMPLE]\e[0m"
+echo 'When adjusting the country code, use these two lines. The first line for logs and the second for dropping.'
 echo 'iptables -A GEOIPDENY -m geoip --source-country RU -j LOG --log-prefix "IPTABLES: Country Denied: RU "'
 echo 'iptables -A GEOIPDENY -m geoip --source-country RU -j DROP'
 

@@ -1,28 +1,52 @@
 #! /bin/bash
 #set -x
 # * **************************************************************************
+# *
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            0.1.0
+# * Version:            1.0.0
 # *
 # * Comment:            Tool to configure install TOR bulk next list for iptables.
 # *
-# * Date: September 07, 2021
-# * Modification: January 21, 2022
+# * Creation: September 07, 2021
+# * Change:   January 21, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
 # ****************************************************************************
 
-echo 'NOT PRODUCTION READY.'
-exit 0
-
 
 # #################################################################
-# ## VARIABLES
-# ## SANS LE trailingslash
+# ## CUSTOM VARIABLES
+
+# ## Do not put the trailing slash.
 rulesLocation='/root/running_scripts/iptables'
+
+
+#############################################################################################
+# ## VARIABLES
+
+# ## Retrieval of the current year.
+appYear=$(date +%Y)
+
+# ## Application informations.
+appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
+
+
+#############################################################################################
+# ## VERIFICATION
+
+# ## Check if the script are running with sudo or under root user.
+if [ "${EUID}" -ne 0 ] ; then
+  echo -e "\n\e[34m${appHeader}\e[0m"
+  printf '%.s─' $(seq 1 "$(tput cols)")
+  echo -e "\n\n\n\e[33mCAUTION: This script must be run with sudo or as root.\e[0m"
+  exit 0
+else
+  echo -e "\n\e[34m${appHeader}\e[0m"
+  printf '%.s─' $(seq 1 "$(tput cols)")
+fi
 
 
 # #################################################################
@@ -30,34 +54,54 @@ rulesLocation='/root/running_scripts/iptables'
 
 # ## Installing the ipset package.
 function ipsetIns() {
-  apt-get install ipset
+ if ! dpkg-query -s ipset > /dev/null 2>&1; then
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing ipset package."
+   apt-get install ipset
+ fi
 }
 
-function ipsetIns() {
+# ## Create a place for rules if they don't exist.
+function torLocation() {
  if [ ! -d "${rulesLocation}" ]; then
    mkdir -p "${rulesLocation}"
  fi
-
-wget -t 1 -T 5 "https://check.torproject.org/torbulkexitlist" > "${rulesLocation}/torbulkexit.ip"
-
-ipset list tor-nodes | wc -l
-# ## A CORRIGER 0 == GO!!
-ipset create tor-nodes iphash
-
-cat torbulkexit.ip | while read TORIP; do ipset -q -A tor-nodes "${TORIP}"; done
-
+}
 
 # ##
-cp ./cron.d/torlistupdate /etc/cron.d/torlistupdate
+function ipsetUpd() { 
+ # ## Download Tor bulk exit list.
+ wget -t 1 -T 5 "https://check.torproject.org/torbulkexitlist" > "${rulesLocation}/torbulkexit.ip"
 
+ # ##
+ ipset list tor-nodes | wc -l
+ # ## A CORRIGER 0 == GO!!
+ ipset create tor-nodes iphash
+
+ # ## Populate TORIP chain.
+ cat torbulkexit.ip | while read -r TORIP; do ipset -q -A tor-nodes "${TORIP}"; done
+
+ # ## Copie cron file for torbulkexit.
+ cp ./cron.d/torlistupdate etc/cron.d/
+}
 
 
 # #################################################################
-# ## CHECK
-iptables -N TORDENY
+# ## EXECUTION
 
-iptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR "
-    iptables -A TORDENY -m set --match-set tor-nodes src -j DROP
+ipsetIns
+torLocation
+ipsetUpd
+
+
+# #################################################################
+# ## EXAMPLE
+
+# ## Example.
+echo -e "\n\e[34m[EXAMPLE]\e[0m"
+echo -e 'iptables -N TORDENY'
+echo -e 'iptables -A INPUT -j TORDENY'
+echo -e '\niptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR "'
+echo -e 'iptables -A TORDENY -m set --match-set tor-nodes src -j DROP'
 
 
 # ## Exit 0

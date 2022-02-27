@@ -5,12 +5,12 @@
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.1.21
+# * Version:            1.1.22
 # *
 # * Comment:            Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
 # * Date:   December 02, 2013
-# * Change: February 23, 2022
+# * Change: February 25, 2022
 # *
 # ****************************************************************************
 # *
@@ -71,11 +71,12 @@ declare -r LAN='W.X.Y.Z'
 declare -ir RESTRICT=0
 
 # ## Restricted IP addresses to access monitoring ports (Used if RESTRICT parameter has a value of "1").
-declare -r MONITORINGIP='W.X.Y.Z'
+declare -a MONITORINGIP=(W.X.Y.Z)
+#declare -a MONITORINGIP=(W.X.Y.Z A.B.C.D)
 
 # ## Restricted IP addresses to access remote access ports (Used if RESTRICT parameter has a value of "1").
 # ## Put space as delimiter.
-#declare -a AUTHORIZEDIP=(W.X.Y.Z)
+declare -a AUTHORIZEDIP=(W.X.Y.Z)
 #declare -a AUTHORIZEDIP=(W.X.Y.Z A.B.C.D)
 
 # ## SSH port (Always enabled).
@@ -103,8 +104,7 @@ declare -ir TOMCAT=0      # TCP/8080
 declare -ir FTP=0         # TCP/20,TCP/21
 
 declare -ir DNS=0         # TCP/53,UDP/53
-#declare -ir DNSSLAVE=0   # Go to "DNS SLAVE SERVER" section below.
-declare -ir RNDC=0        # TCP/953
+declare -ir RNDC=0        # TCP/953		# ## Go to "DNS MASTER/SLAVE SERVER" section below instead.
 
 declare -ir NTP=0         # UDP/123
 
@@ -132,14 +132,14 @@ declare -ir VNC=0         # User specified
 
 
 # ############################################################################################
-# ## DNS SLAVE SERVER
+# ## DNS MASTER/SLAVE SERVER
 
 # ## Enable (1) or Disable (0).
-declare -ir DNSSLAVE=0    # TCP/53,UDP/53,TCP/953
+declare -ir DNSERVER=0    # TCP/53,UDP/53,TCP/953
 
-# ## DNS Slave Server.
-declare -r DNSSLV='W.X.Y.Z'
-#declare -a DNSSLV=(W.X.Y.Z A.B.C.D)
+# ## DNS Master/Slave Server.
+declare -a DNSREMOTE=(W.X.Y.Z)
+#declare -a DNSREMOTE=(W.X.Y.Z A.B.C.D)
 
 
 # ############################################################################################
@@ -170,14 +170,14 @@ declare -r TUNNEL='tap+'
 # ## Enable (1) or Disable (0).
 declare -ir VPSSLA=0
 
-# ## SLA Server (UNUSED).
-#declare -r SLASVC='W.X.Y.Z'
+# ## SLA Server.
+declare -a SLASVC=(W.X.Y.Z)
 #declare -a SLASVC=(W.X.Y.Z A.B.C.D)
 
 
 # ############################################################################################
 # ## EXTRA PROTECTION
-# ## WARNING: Additonnal configuration on the system is nedded. Please read the instructions.
+# ## WARNING: Additonnal configuration an package on the system is nedded. Please read the instructions.
 
 # ## GEOIP
  # ## Allowed countries and drop others countries.
@@ -206,6 +206,10 @@ declare -ir VPSSLA=0
  # ## Enable (1) or Disable (0).
  declare -ir SHODANDENY=0
 
+# ## SPAMHAUS.
+ # ## Enable (1) or Disable (0).
+ declare -ir SPAMHAUSDENY=0
+
 # ## DENY LIST.
  # ## Enable (1) or Disable (0).
  declare -ir REDLIST=1
@@ -219,8 +223,8 @@ declare -ir VPSSLA=0
 
 # ## Check if the script is configured.
 if [ "${isConfigured}" == 'false' ] ; then
- echo -n -e '\e[38;5;208mWARNING: Customize the settings to match your environment. Then set the "isConfigured" variable to "true".\n\e[0m'
- exit 0
+  echo -n -e '\e[38;5;208mWARNING: Customize the settings to match your environment. Then set the "isConfigured" variable to "true".\n\e[0m'
+  exit 0
 fi
 
 # ############################################################################################
@@ -228,7 +232,7 @@ fi
 
 # ## Definition of the interfaces.
 if [ "${AUTODETECTLAN}" -eq 1 ]; then
-    INET=$(ip addr | grep 'state UP' | cut -d ':' -f 2 | sed 's/ //g' | head -n 1)
+  INET=$(ip addr | grep 'state UP' | cut -d ':' -f 2 | sed 's/ //g' | head -n 1)
   declare -r INET
 
   LAN=$(ip address show "${INET}" | grep -F 'inet ' | cut -d ' ' -f 6 | head -1 | cut -d '/' -f 1)
@@ -411,18 +415,13 @@ iptables -A INPUT -m recent --name portscan --remove
 iptables -A FORWARD -m recent --name portscan --remove
 
 
-# ## !!!!!!!!!!!!!!!! BUG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# ## Différence entre /proc/self/net/xt_recent/portscan vs /proc/net/xt_recent/portscan
-
-
 # ############################################################################################
 # ## EXTRA PROTECTION RULES
 
 # ## GEOIP
-GEOIP_PKG=$(dpkg-query -W --showformat='${Status}\n' "xtables-addons-common" | grep -c "install ok installed")
-
-if [ "${GEOIP_PKG}" -eq 0 ]; then
-  echo -e "ERROR: GEOIP extra protection security skipped. Missing dependancy (xtables-addons-common or geoip-bin)."
+# ## Check if GeoIP services is installed.
+if ! dpkg-query -s 'xtables-addons-common' > /dev/null 2>&1; then
+  echo -e "\e[31;1;208mERROR:\e[0m GEOIP extra protection security skipped. Missing dependancy (xtables-addons-common or geoip-bin)."
 else
   # ## GEOIP ALLOW.
   if [ "${GEOIPALLOW}" -eq 1 ]; then
@@ -487,15 +486,13 @@ else
 
   # ## GEOIP DENY.
   if [ "${GEOIPDENY}" -eq 1 ]; then
-    echo "DEBUG: GEOIPDENY"
     iptables -N GEOIPDENY
     iptables -A INPUT -j GEOIPDENY
 
     # ## Converting to array, because the iptables geoip has a fifteen country code limitation.
     for denyCC in "${denyCountry[@]}"
     do
-    #echo "DEBUG: ${denyCC}"
-      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC} :"
+      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC}: "
       iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j DROP
     done
   fi
@@ -520,28 +517,23 @@ if [ "${TORDENY}" -eq 1 ]; then
       mkdir -p "${customPath}"
     fi
 
-    # ## Check if the shodan ip list file exist.
+    # ## Check if the Tor IP list file exist.
     if [ ! -f "${customPath}"/torbulkexit.ip ]; then
       touch "${customPath}"/torbulkexit.ip
     fi
 
-    #cat "${customPath}"/torbulkexit.ip | while read -r TORIP; do
     while IFS= read -r TORIP; do echo "${TORIP%?}";
       ipset -q -A tor-nodes "${TORIP}"
     done < "${customPath}"/torbulkexit.ip
 
-    echo "DEBUG: TORDENY"
     iptables -N TORDENY
     iptables -A INPUT -j TORDENY
 
     iptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR: "
     iptables -A TORDENY -m set --match-set tor-nodes src -j DROP
 
-#    iptables -A INPUT -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR INPUT: "
-#    iptables -A INPUT -m set --match-set tor-nodes src -j DROP
-
-#    iptables -A OUTPUT -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR INPUT: "
-#    iptables -A OUTPUT -m set --match-set tor-nodes src -j DROP
+    #iptables -A OUTPUT -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR OUTPUT: "
+    #iptables -A OUTPUT -m set --match-set tor-nodes src -j DROP
   fi
 fi
 
@@ -552,7 +544,7 @@ if [ "${SHODANDENY}" -eq 1 ]; then
   if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then
     echo -e "\e[33;1;208mWARNING:\e[0m SHODAN extra protection security skipped. Missing dependancy (ipset)."
   else
-  # ## Else, populate the Shodan node.
+    # ## Else, populate the Shodan node.
     shodanList=$(ipset list shodan-nodes | wc -l)
 
     if [ "${shodanList}" -le 2 ]; then
@@ -564,25 +556,63 @@ if [ "${SHODANDENY}" -eq 1 ]; then
       mkdir -p "${customPath}"
     fi
 
-    # ## Check if the shodan ip list file exist.
+    # ## Check if the Shodan ip list file exist.
     if [ ! -f "${customPath}"/shodan.ip ]; then
       touch "${customPath}"/shodan.ip
     fi
 
-    #cat "${customPath}"/shodan.ip | while read -r SHODANIP; do
     while IFS= read -r SHODANIP; do echo "${SHODANIP%?}";
       ipset -q -A shodan-nodes "${SHODANIP}"
     done < "${customPath}"/shodan.ip
 
-    echo "DEBUG: SHODAN"
     iptables -N SHODAN
     iptables -A INPUT -j SHODAN
 
     iptables -A SHODAN -m set --match-set shodan-nodes src -j LOG --log-prefix "IPTABLES: SHODAN: "
     iptables -A SHODAN -m set --match-set shodan-nodes src -j DROP
 
-#    iptables -A OUTPUT -m set --match-set shodan-nodes src -j LOG --log-prefix "IPTABLES: SHODAN: "
-#    iptables -A OUTPUT -m set --match-set shodan-nodes src -j DROP
+    #iptables -A OUTPUT -m set --match-set shodan-nodes src -j LOG --log-prefix "IPTABLES: SHODAN OUTPUT: "
+    #iptables -A OUTPUT -m set --match-set shodan-nodes src -j DROP
+  fi
+fi
+
+# ## SPAMHAUS - Drop/EDrop List.
+if [ "${SPAMHAUSDENY}" -eq 1 ]; then
+
+  # ## Check if IPSet services is installed.
+  if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then
+    echo -e "\e[33;1;208mWARNING:\e[0m SPAMHAUS extra protection security skipped. Missing dependancy (ipset)."
+  else
+    # ## Else, populate the Spamhaus node.
+    shDropList=$(ipset list spamhaus-nodes | wc -l)
+
+    if [ "${shDropList}" -le 2 ]; then
+      ipset create spamhaus-nodes nethash
+    fi
+
+    # ## Check if the custom path exist. If it does not exist, create it.
+    if [ ! -d "${customPath}" ]; then
+      mkdir -p "${customPath}"
+    fi
+
+    # ## Check if the Spamhaus IP list file exist.
+    if [ ! -f "${customPath}"/spamhaus.ip ]; then
+      touch "${customPath}"/spamhaus.ip
+    fi
+
+
+    while IFS= read -r SHDROPIP; do echo "${SHDROPIP%?}";
+      ipset -q -A spamhaus-nodes "${SHDROPIP}"
+    done < "${customPath}"/spamhaus.ip
+
+    iptables -N SPAMHAUSDENY
+    iptables -A INPUT -j SPAMHAUSDENY
+
+    iptables -A SPAMHAUSDENY -m set --match-set spamhaus-nodes src -j LOG --log-prefix "IPTABLES: SPAMHAUS: "
+    iptables -A SPAMHAUSDENY -m set --match-set spamhaus-nodes src -j DROP
+
+    #iptables -A OUTPUT -m set --match-set spamhaus-nodes src -j LOG --log-prefix "IPTABLES: SPAMHAUS OUTPUT: "
+    #iptables -A OUTPUT -m set --match-set spamhaus-nodes src -j DROP
   fi
 fi
 
@@ -610,20 +640,18 @@ if [ "${REDLIST}" -eq 1 ]; then
       touch "${customPath}/redlist.ip"
     fi
 
-    #cat "${customPath}"/redlist.ip | while read -r REDIP; do
     while IFS= read -r REDIP; do echo "${REDIP%?}";
       ipset -q -A redlist-nodes "${REDIP}"
-    done < "${customPath}"/shodan.ip
+    done < "${customPath}"/redlist.ip
 
-    echo "DEBUG: REDLIST"
     iptables -N REDLIST
     iptables -A INPUT -j REDLIST
 
     iptables -A REDLIST -m set --match-set redlist-nodes src -j LOG --log-prefix "IPTABLES: REDLIST: "
     iptables -A REDLIST -m set --match-set redlist-nodes src -j DROP
 
-#    iptables -A OUTPUT -m set --match-set redlist-nodes src -j LOG --log-prefix "IPTABLES: REDLIST: "
-#    iptables -A OUTPUT -m set --match-set redlist-nodes src -j DROP
+    #iptables -A OUTPUT -m set --match-set redlist-nodes src -j LOG --log-prefix "IPTABLES: REDLIST: "
+    #iptables -A OUTPUT -m set --match-set redlist-nodes src -j DROP
   fi
 fi
 
@@ -632,7 +660,6 @@ fi
 # ## CUSTOM RULES
 
 # ##
-echo "DEBUG: CUSTOM"
 iptables -N CUSTOM
 iptables -A INPUT -j CUSTOM
 
@@ -730,7 +757,9 @@ fi
 # ## SNMP rules.
 if [ "${SNMP}" -eq 1 ]; then
  if [ "${RESTRICT}" -eq 1 ]; then
-   iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p udp -m udp --dport 161 -j ACCEPT
+   for monAllowIp in "${MONITORINGIP[@]}"; do
+     iptables -A INPUT -s "${monAllowIp}" -d "${LAN}" -p udp -m udp --dport 161 -j ACCEPT
+   done
  else
    iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 161 -j ACCEPT
  fi
@@ -742,9 +771,9 @@ if [ "${DNS}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
 fi
 
-# ## DNS Slave rules.
-if [ "${DNSSLAVE}" -eq 1 ]; then
-  for ipSlave in ${DNSSLV[*]}
+# ## DNS Remote Master/Slave rules.
+if [ "${DNSERVER}" -eq 1 ]; then
+  for ipSlave in ${DNSREMOTE[*]}
   do
     iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
     iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
@@ -809,16 +838,20 @@ fi
 # ## ZABBIX AGENT rules.
 if [ "${ZABAGENT}" -eq 1 ]; then
   if [ "${RESTRICT}" -eq 1 ]; then
-    iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
+    for monAllowIp in "${MONITORINGIP[@]}"; do
+      iptables -A INPUT -s "${monAllowIp}" -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
+    done
   else
-   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
+    iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10050 --j ACCEPT
   fi
 fi
 
 # ## ZABBIX SERVER rules.
 if [ "${ZABSERVER}" -eq 1 ]; then
  if [ "${RESTRICT}" -eq 1 ]; then
-   iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10051 --j ACCEPT
+   for monAllowIp in "${MONITORINGIP[@]}"; do
+     iptables -A INPUT -s "${monAllowIp}" -d "${LAN}" -p tcp -m tcp --dport 10051 --j ACCEPT
+   done
  else
    iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10051 --j ACCEPT
  fi
@@ -827,9 +860,11 @@ fi
 # ## ZABBIX JAVA GATEWAY rules.
 if [ "${ZABJAVAGW}" -eq 1 ]; then
  if [ "${RESTRICT}" -eq 1 ]; then
-  iptables -A INPUT -s "${MONITORINGIP}" -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
+   for monAllowIp in "${MONITORINGIP[@]}"; do 
+     iptables -A INPUT -s "${monAllowIp}" -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
+   done
  else
-  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
+   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 10052 --j ACCEPT
  fi
 fi
 
@@ -854,7 +889,9 @@ fi
 
 # ## VPS SLA rules.
 if [ "${VPSSLA}" -eq 1 ]; then
-  iptables -A INPUT -s "${SLA}" -d "${LAN}" -p tcp -m tcp -j ACCEPT
+  for slaIp in "${SLASVC[@]}"; do
+    iptables -A INPUT -s "${slaIp}" -d "${LAN}" -p tcp -m tcp -j ACCEPT
+  done
 fi
 
 
@@ -882,7 +919,6 @@ fi
 # ## LOG PARAMETERS
 
 # Audit rules.
-#echo "DEBUG: LOGGING"
 iptables -N LOGGING
 iptables -A INPUT -j LOGGING
 iptables -A OUTPUT -j LOGGING

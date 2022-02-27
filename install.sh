@@ -9,8 +9,8 @@
 # *
 # * Comment:            Script to install environment for 40-iptables.
 # *
-# * Date:   December 02, 2013
-# * Change: February 23, 2022
+# * Creation: December 02, 2013
+# * Change:   February 23, 2022
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -37,10 +37,6 @@ declare -r actualYear
 # ## Title header.
 appHeader="(c) 2004-${actualYear}  Cybionet - Installation Wizard"
 declare -r appHeader
-
-
-#############################################################################################
-# ## FUNCTION
 
 
 #############################################################################################
