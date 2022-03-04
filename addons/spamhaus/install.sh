@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.0
+# * Version:            1.0.1
 # *
-# * Comment:            Tool to configure install of Spamhaus for iptables.
+# * Description:        Tool to configure install of Spamhaus for iptables.
 # *
 # * Creation: February 25, 2022
-# * Change:   February 26, 2022
+# * Change:   March 01, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -19,6 +19,9 @@
 
 #############################################################################################
 # ## VARIABLES
+
+# ## Path where is located the custom rules file.
+declare -r customPath='/root/running_scripts/iptables'
 
 # ## Retrieval of the current year.
 appYear=$(date +%Y)
@@ -64,20 +67,43 @@ function shUpd() {
 }
 
 function checkPackage() {
- APPDEP="${1}"
- if ! dpkg-query -s "${APPDEP}" > /dev/null 2>&1; then
-   echo -e "\e[33;1;208mWARNING:\e[0m Spamhaus is not configured. Missing package ${APPDEP}."
-   echo -e "\tInstall the missing package with this command: apt-get install ${APPDEP}"
+ if ! dpkg-query -s ipset > /dev/null 2>&1; then
+   echo -e "\e[33;1;208mWARNING:\e[0m Spamhaus is not configured. Missing package ipset."
+   echo -e "\tInstall the missing package with this command: apt-get install ipset"
    exit 0
  fi
 }
 
+function populateIpset() {
+ # ## Populate the Spamhaus node.
+ shDropList=$(ipset list spamhaus-nodes | wc -l)
+
+ if [ "${shDropList}" -le 2 ]; then
+   ipset create spamhaus-nodes nethash
+ fi
+
+ # ## Check if the custom path exist. If it does not exist, create it.
+ if [ ! -d "${customPath}" ]; then
+   mkdir -p "${customPath}"
+ fi
+
+ # ## Check if the Spamhaus IP list file exist.
+ if [ ! -f "${customPath}"/spamhaus.ip ]; then
+   touch "${customPath}"/spamhaus.ip
+ fi
+
+
+ while IFS= read -r SHDROPIP; do echo "${SHDROPIP%?}";
+   ipset -q -A spamhaus-nodes "${SHDROPIP}"
+ done < "${customPath}"/spamhaus.ip
+}
 
 # ############################################################################################
 # ## EXECUTION
 
-checkPackage 'ipset'
+checkPackage
 shUpd
+populateIpset
 
 echo -e "\n\e[33m[FINISH]\e[0m"
 

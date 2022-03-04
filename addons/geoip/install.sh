@@ -2,12 +2,12 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
 # * Version:            1.0.0
 # *
-# * Comment:            Tool to configure install Geoip for iptables.
+# * Description:        Tool to configure install Geoip for iptables.
 # *
 # * Creation: September 07, 2021
 # * Change:   February 23, 2022
@@ -49,7 +49,7 @@ fi
 # ## GEOIP
 
 # ## Installing the geoip package and its database.
-function geoipIns() {
+function geoipInstall() {
  apt-get install geoip-bin geoip-database
 }
 
@@ -59,23 +59,17 @@ function geoipDep() {
 }
 
 function geoipUpd() {
- #wget 
  cp ./bin/geo-update.sh /usr/sbin/geo-update.sh
  chmod 500 /usr/sbin/geo-update.sh
 
  # ## Launch the script for the first time to generate the list.
  # ## Restriction: Absolutely need xt_geoip module for iptables.
+ echo -e "\n\e[32mCREATING COUNTRY CODE FILES\e[0m"
  /usr/sbin/geo-update.sh
 }
 
 function geoipCron() {
- #wget
  cp ./cron.d/geoipupdate /etc/cron.d/geoipupdate
-
-# vim /etc/cron.d/geoipupdate
-#
-#	# ## Geoip
-#	30 19 * * * root /usr/sbin/geo-update.sh >/dev/null 2>&1
 }
 
 
@@ -136,7 +130,7 @@ geoipDep
 # ## XT_Geoip installation.
 echo -e "\n\e[34m[XT_GEOIP]\e[0m"
 xtGeoipDep
-xtGeoipRe
+xtGeoipRep
 xtGeoipCheck
 
 # ## Update Mecanism
@@ -151,9 +145,9 @@ ccFilesCheck
 
 # ## Example.
 echo -e "\n\e[34m[EXAMPLE]\e[0m"
-echo 'When adjusting the country code, use these two lines. The first line for logs and the second for dropping.'
-echo 'iptables -A GEOIPDENY -m geoip --source-country RU -j LOG --log-prefix "IPTABLES: Country Denied: RU "'
-echo 'iptables -A GEOIPDENY -m geoip --source-country RU -j DROP'
+echo -e '\tWhen adjusting the country code, use these two lines. The first line for logs and the second for dropping.'
+echo -e '\t  iptables -A GEOIPDENY -m geoip --source-country RU -j LOG --log-prefix "IPTABLES: Country Denied: RU "'
+echo -e '\t  iptables -A GEOIPDENY -m geoip --source-country RU -j DROP'
 
 
 # ## Exit.

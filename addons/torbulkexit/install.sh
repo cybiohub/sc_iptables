@@ -2,12 +2,12 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
 # * Version:            1.0.0
 # *
-# * Comment:            Tool to configure install TOR bulk next list for iptables.
+# * Description:        Tool to configure install TOR bulk next list for iptables.
 # *
 # * Creation: September 07, 2021
 # * Change:   January 21, 2022
@@ -70,18 +70,25 @@ function torLocation() {
 # ##
 function ipsetUpd() { 
  # ## Download Tor bulk exit list.
- wget -t 1 -T 5 "https://check.torproject.org/torbulkexitlist" > "${rulesLocation}/torbulkexit.ip"
+ wget -T3 -q https://check.torproject.org/torbulkexitlist -O "${rulesLocation}"/torbulkexit.ip || rm -f "${rulesLocation}"/torbulkexit.ip
 
- # ##
- ipset list tor-nodes | wc -l
- # ## A CORRIGER 0 == GO!!
- ipset create tor-nodes iphash
+ # ## Populate the Tor node.
+ shTorList=$(ipset list tor-nodes | wc -l)
+
+ if [ "${shTorList}" -le 2 ]; then
+   ipset create tor-nodes iphash
+ fi
+
+ # ## Check if the Spamhaus IP list file exist.
+ if [ ! -f "${rulesLocation}"/torbulkexit.ip ]; then
+   touch "${rulesLocation}"/torbulkexit.ip
+ fi
 
  # ## Populate TORIP chain.
- cat torbulkexit.ip | while read -r TORIP; do ipset -q -A tor-nodes "${TORIP}"; done
+ cat "${rulesLocation}"/torbulkexit.ip | while read -r TORIP; do ipset -q -A tor-nodes "${TORIP}"; done
 
  # ## Copie cron file for torbulkexit.
- cp ./cron.d/torlistupdate etc/cron.d/
+ cp ./cron.d/torlistupdate /etc/cron.d/
 }
 
 
@@ -98,10 +105,10 @@ ipsetUpd
 
 # ## Example.
 echo -e "\n\e[34m[EXAMPLE]\e[0m"
-echo -e 'iptables -N TORDENY'
-echo -e 'iptables -A INPUT -j TORDENY'
-echo -e '\niptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR "'
-echo -e 'iptables -A TORDENY -m set --match-set tor-nodes src -j DROP'
+echo -e '\t iptables -N TORDENY'
+echo -e '\t iptables -A INPUT -j TORDENY'
+echo -e '\t iptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR "'
+echo -e '\t iptables -A TORDENY -m set --match-set tor-nodes src -j DROP'
 
 
 # ## Exit 0

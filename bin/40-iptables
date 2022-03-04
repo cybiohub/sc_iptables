@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
 # * Version:            1.1.22
 # *
-# * Comment:            Script to customize the IPv4 rules of a dynamic firewall interface.
+# * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
-# * Date:   December 02, 2013
-# * Change: February 25, 2022
+# * Creation: December 02, 2013
+# * Change:   February 25, 2022
 # *
 # ****************************************************************************
 # *

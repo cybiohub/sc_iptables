@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               spamhaus.sh
 # * Version:            1.0.0
 # *
-# * Comment:            Tool to populate Spamhaus list for iptables.
+# * Description:        Tool to populate Spamhaus list for iptables.
 # *
 # * Creation: February 25, 2022
-# * change:   February 26, 2022
+# * Change:   February 26, 2022
 # *
 # * **************************************************************************
 # * chmod 500 spamhaus.sh
@@ -31,9 +31,8 @@ IPV6=0
 # ## FUNCTIONS
 
 function checkPackage() {
- APPDEP="${1}"
- if ! dpkg-query -s "${APPDEP}" > /dev/null 2>&1; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m Spamhaus is not configured. Missing package ${APPDEP}."
+ if ! dpkg-query -s ipset > /dev/null 2>&1; then
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Spamhaus is not configured. Missing package ipset."
    exit 0
  fi
 }
@@ -44,14 +43,14 @@ function shIpv4() {
  # ## DROP will only include netblocks allocated directly by an established Regional Internet Registry (RIR) or National Internet Registry (NIR)
  # ## such as ARIN, RIPE, AFRINIC, APNIC, LACNIC or KRNIC or direct RIR allocations. 
  wget -T3 -q https://www.spamhaus.org/drop/drop.txt -O "${customPath}"/drop.txt || rm -f "${customPath}"/drop.txt
- if [ -f "drop.txt" ]; then
+ if [ -f "${customPath}/drop.txt" ]; then
    cat "${customPath}"/drop.txt | grep -v "^;" | awk -F " ; " '{print $1}' > "${customPath}"/spamhaus.ip
    rm "${customPath}"/drop.txt
  fi
 
  # ## Extension of the DROP list that includes suballocated netblocks controlled by spammers or cyber criminals. 
  wget -T3 -q https://www.spamhaus.org/drop/edrop.txt -O "${customPath}"/edrop.txt || rm -f "${customPath}"/edrop.txt
- if [ -f "edrop.txt" ]; then
+ if [ -f "${customPath}/edrop.txt" ]; then
    cat "${customPath}"/edrop.txt | grep -v "^;" | awk -F " ; " '{print $1}' >> "${customPath}"/spamhaus.ip
    rm "${customPath}"/edrop.txt
  fi

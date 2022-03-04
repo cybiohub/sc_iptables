@@ -2,12 +2,12 @@
 #set -x
 # ****************************************************************************
 # *
-# * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               60-ip6tables.sh
 # * Version:            1.1.2
 # *
-# * Comment:            Script to customize the IPv6 rules of firewall.
+# * Description:        Script to customize the IPv6 rules of firewall.
 # *
 # * Creation: December 02, 2013
 # * Change:   November 27, 2021

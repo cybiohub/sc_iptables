@@ -2,12 +2,12 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               ccstats.sh
 # * Version:            0.0.2
 # *
-# * Comment:            Tool to Displays statistics for a specific country in the iptables log.
+# * Description:        Tool to Displays statistics for a specific country in the iptables log.
 # *
 # * Creation: January 31, 2022
 # * Change:   February 23, 2022

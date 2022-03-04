@@ -2,12 +2,12 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               ccgraph.sh
 # * Version:            0.1.0
 # *
-# * Comment:            Tool to graph number of hits by country in iptables log.
+# * Description:        Tool to graph number of hits by country in iptables log.
 # *
 # * Creation: January 31, 2022
 # * Change:   February 04, 2022
