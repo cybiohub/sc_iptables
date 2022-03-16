@@ -492,7 +492,7 @@ else
     # ## Converting to array, because the iptables geoip has a fifteen country code limitation.
     for denyCC in "${denyCountry[@]}"
     do
-      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC}: "
+      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC} : "
       iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j DROP
     done
   fi
