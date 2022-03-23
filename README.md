@@ -41,15 +41,18 @@ Recommended:
 - Rate-limit incoming SSH connections
 - Block Port Scan
 
+<br>
 
 ## INCLUDED ADDONS
 - Geoip (Allow/Block)
-- Spamhaust Drop/EDrop list
+- Spamhaus Drop/EDrop list
 - Block Tor Exit Nodes
+
+<br>
 
 ## EXTRA TOOL
 
-Tools to show you attacks blocked.
+Tool to show you blocked attacks. For example, a quiet start to the week.
 
 ![Attacks Graph Report](./md/ATTGRAPH2.png "Attack Graph Report")
 
