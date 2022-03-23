@@ -23,15 +23,15 @@ Recommended:
 
 <br>
 
-## FEATURES SUPPORTED
+## SUPPORTED FEATURES
 
-- Allow Predefine services
-- Allow restricted IP for management access.
+- Authorize predefined services
+- Allow restricted IP addresses for management access
 - Greenlist/Redlist
-- Custom rules support
+- Support for custom rules
 - Block Shodan hosts
-- Extra block for Censys,Sonar, ShdowServer hosts
-- Block DNS Queries by domainnames
+- Extra blocks for Censys,Sonar, ShdowServer hosts
+- Block DNS queries by domain names
 - SMURF attack
 - NULL packets
 - SYN FLOOD attack
