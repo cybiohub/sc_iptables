@@ -5,8 +5,7 @@
 
 ## SUMMARY
 
-Easy installation script of Zabbix Proxy service with SQLite3.
-
+Script to customize the IPv4 rules and add some extra security rules.
 
 ## REQUIRED
 
