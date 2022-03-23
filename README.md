@@ -29,7 +29,7 @@ Recommended:
 - Greenlist/Redlist
 - Support for custom rules
 - Block Shodan hosts
-- Extra blocks for Censys,Sonar, ShdowServer hosts
+- Extra blocks for Censys,Sonar, ShadowServer hosts
 - Block DNS queries by domain names
 - SMURF attack
 - NULL packets
