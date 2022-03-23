@@ -51,7 +51,7 @@ Recommended:
 
 Tools to show you attacks blocked.
 
-![Attacks Graph Report](./md/ATTGRAPH.png "Attack Graph Report")
+![Attacks Graph Report](./md/ATTGRAPH2.png "Attack Graph Report")
 
 <br>
 
