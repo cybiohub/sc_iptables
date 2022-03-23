@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.23
+# * Version:            1.1.24
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   March 03, 2022
+# * Change:   March 22, 2022
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -106,6 +106,12 @@ cp ./bin/40-iptables /usr/share/netfilter-persistent/plugins.d/
 chmod 500 /usr/share/netfilter-persistent/plugins.d/40-iptables
 ln -sf /usr/share/netfilter-persistent/plugins.d/40-iptables "${rulesLocation}"
 
+# ## Copy IPv4 configuration script.
+cp ./config/40-iptables.conf /etc/
+chmod 440 /etc/40-iptables.conf
+ln -sf /etc/40-iptables.conf "${rulesLocation}"
+
+
 # ## Copy IPv6 persistent script.
 cp ./bin/60-ip6tables /usr/share/netfilter-persistent/plugins.d/
 chmod 500 /usr/share/netfilter-persistent/plugins.d/60-ip6tables
@@ -115,7 +121,7 @@ ln -sf /usr/share/netfilter-persistent/plugins.d/60-ip6tables "${rulesLocation}"
 iptablesLog
 
 # ## Last message.
-echo -e "\e[38;5;208mWARNING: Please configure the 40-iptables and 60-ip6tables scripts before restarting.\e[0m\n vim /usr/share/netfilter-persistent/plugins.d/40-iptables"
+echo -e "\e[38;5;208mWARNING: Please configure the 40-iptables scripts before restarting.\e[0m\n vim /etc/40-iptables.conf"
 
 
 # ## Exit.
