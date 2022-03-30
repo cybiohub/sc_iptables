@@ -141,7 +141,7 @@ case "${1}" in
         version
   ;;
   *)
-  echo 'Options: add |  del | populate | showlist | backup'
+  echo -e 'Options: add | del | populate | showlist | backup\n'
   ;;
 esac
 
