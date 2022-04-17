@@ -4,16 +4,21 @@
 # *
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
-# * File:               spamhaus.sh
-# * Version:            1.0.0
+# * File:               generatespamhaus.sh
+# * Version:            1.1.0
 # *
 # * Description:        Tool to populate Spamhaus list for iptables.
 # *
 # * Creation: February 25, 2022
-# * Change:   February 26, 2022
+# * Change:   April 17, 2022
 # *
 # * **************************************************************************
-# * chmod 500 spamhaus.sh
+# *
+# * chmod 500 generatespamhaus.sh
+# *
+# * vim /etc/cron.d/cron.d/spamhausupdate
+# *   30 19 * * * /usr/sbin/generatespamhaus.sh
+# *
 # ****************************************************************************
 
 
@@ -70,6 +75,24 @@ function shIpv6() {
 }
 
 
+# ## Populating the ipset list.
+function popIpset() {
+ # ## Populating the ipset list.
+ if [[ -f "${customPath}/spamhaus.ip" && -n "${customPath}/spamhaus.ip" ]]; then
+
+   ipset create new-spamhaus-nodes nethash
+
+   while IFS= read -r SHIP; do echo "${SHIP%?}";
+     ipset -q -A new-spamhaus-nodes "${SHIP}"
+   done < "${customPath}/spamhaus.ip"
+
+   ipset swap new-spamhaus-nodes spamhaus-nodes
+   ipset destroy new-spamhaus-nodes
+ else
+   echo -n -e "\e[38;5;208mWARNING:\e[0m The list of IP addresses is empty or does not exist."
+ fi
+}
+
 # ############################################################################################
 # ## EXECUTION
 
@@ -77,6 +100,7 @@ checkPackage 'ipset'
 
 shIpv4
 shIpv6
+popIpset
 
 
 # ## Exit

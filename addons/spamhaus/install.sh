@@ -50,19 +50,19 @@ fi
 
 function shUpd() {
  echo -e "\n\e[34m[SCRIPT]\e[0m"
- echo -e "\tCopy spamhaus.sh script to his destination (/usr/sbin/)."
+ echo -e "\tCopy generatespamhaus.sh script to his destination (/usr/sbin/)."
 
- cp ./bin/spamhaus.sh /usr/sbin/spamhaus.sh
- chmod 500 /usr/sbin/spamhaus.sh
+ cp ./bin/generatespamhaus.sh /usr/sbin/generatespamhaus.sh
+ chmod 500 /usr/sbin/generatespamhaus.sh
 
  # ## Launch the script for the first time to generate the list.
  # ## Restriction: Absolutely need xt_geoip module for iptables.
  echo -e "\n\e[34m[DATABASE]\e[0m"
  echo -e "\tPopulate Spamhaus drop list with IPv4 netblocks allocated."
- if [ -f '/usr/sbin/spamhaus.sh' ]; then
-   /usr/sbin/spamhaus.sh
+ if [ -f '/usr/sbin/generatespamhaus.sh' ]; then
+   /usr/sbin/generatespamhaus.sh
  else
-   echo -e "\n\e[31mERROR: The Spamhaus script (spamhaus.sh) is missing.\e[0m"
+   echo -e "\n\e[31mERROR: The Spamhaus script (generatespamhaus.sh) is missing.\e[0m"
  fi
 }
 

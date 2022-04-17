@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.1.22
+# * Version:            1.1.23
 # *
 # * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
 # * Creation: December 02, 2013
-# * Change:   March 16, 2022
+# * Change:   April 16, 2022
 # *
 # ****************************************************************************
 # *
@@ -345,6 +345,9 @@ fi
 
 # ## TOR - Tor Exit Nodes.
 if [ "${TORDENY}" -eq 1 ]; then
+
+  # ## Rule to avoid being blocked by GeoIP rules.
+  iptables -I INPUT -s 116.202.120.181 -d "${LAN}" -p tcp -m state --state ESTABLISHED -j ACCEPT
 
   # ## Check if IPSet services is installed.
   if ! dpkg-query -s 'ipset' > /dev/null 2>&1; then

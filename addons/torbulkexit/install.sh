@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.0
+# * Version:            1.1.0
 # *
 # * Description:        Tool to configure install TOR bulk next list for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   January 21, 2022
+# * Change:   April 17, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -68,6 +68,13 @@ function torLocation() {
 }
 
 # ##
+function copyApp() {
+ cp ./bin/generatetorbulkexit.sh "${rulesLocation}"/
+ chmod 500 "${rulesLocation}"/generatetorbulkexit.sh
+}
+
+
+# ##
 function ipsetUpd() { 
  # ## Download Tor bulk exit list.
  wget -T3 -q https://check.torproject.org/torbulkexitlist -O "${rulesLocation}"/torbulkexit.ip || rm -f "${rulesLocation}"/torbulkexit.ip
@@ -97,6 +104,7 @@ function ipsetUpd() {
 
 ipsetIns
 torLocation
+copyApp
 ipsetUpd
 
 
