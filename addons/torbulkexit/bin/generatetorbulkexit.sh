@@ -33,6 +33,7 @@ declare -r customPath='/root/running_scripts/iptables'
 
 # ## Download the new list of Tor bulk exit nodes.
 wget -q -O - https://check.torproject.org/torbulkexitlist > "${customPath}/torbulkexit.ip"
+logger -t spamhaus -p user.info "Download complete."
 
 # ## Populating the ipset list.
 if [[ -f "${customPath}/torbulkexit.ip" && -n "${customPath}/torbulkexit.ip" ]]; then
@@ -45,8 +46,11 @@ if [[ -f "${customPath}/torbulkexit.ip" && -n "${customPath}/torbulkexit.ip" ]];
 
   ipset swap new-tor-nodes tor-nodes
   ipset destroy new-tor-nodes
+
+  logger -t torlist -p user.info "Finished to populated list."
 else
   echo -n -e "\e[38;5;208mWARNING:\e[0m The list of IP addresses is empty or does not exist."
+  logger -t torlist -p user.warn "The list of IP addresses is empty or does not exist."
 fi
 
 # ## Exit.

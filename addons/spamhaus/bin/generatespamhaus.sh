@@ -59,6 +59,8 @@ function shIpv4() {
    cat "${customPath}"/edrop.txt | grep -v "^;" | awk -F " ; " '{print $1}' >> "${customPath}"/spamhaus.ip
    rm "${customPath}"/edrop.txt
  fi
+
+ logger -t spamhaus -p user.info "Download complete."
 }
 
 # ## IPv6
@@ -88,8 +90,10 @@ function popIpset() {
 
    ipset swap new-spamhaus-nodes spamhaus-nodes
    ipset destroy new-spamhaus-nodes
+   logger -t spamhaus -p user.info "Finished to populated list."
  else
    echo -n -e "\e[38;5;208mWARNING:\e[0m The list of IP addresses is empty or does not exist."
+   logger -t spamhaus -p user.warn "The list of IP addresses is empty or does not exist."
  fi
 }
 
