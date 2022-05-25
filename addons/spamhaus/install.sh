@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.1
+# * Version:            1.0.2
 # *
 # * Description:        Tool to configure install of Spamhaus for iptables.
 # *
 # * Creation: February 25, 2022
-# * Change:   March 01, 2022
+# * Change:   May 18, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -28,6 +28,9 @@ appYear=$(date +%Y)
 
 # ## Application informations.
 appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
+
+# ## Where the installer is located.
+appLocation=$(dirname "${0}")
 
 
 #############################################################################################
@@ -48,11 +51,20 @@ fi
 # ############################################################################################
 # ## FUNCTIONS
 
+# ## Check if ipset package is installed.
+function checkPackage() {
+ if ! dpkg-query -s ipset > /dev/null 2>&1; then
+   echo -e "\e[33;1;208mWARNING:\e[0m Spamhaus is not configured. Missing package ipset."
+   echo -e "\tInstall the missing package with this command: apt-get install ipset"
+   exit 0
+ fi
+}
+
 function shUpd() {
  echo -e "\n\e[34m[SCRIPT]\e[0m"
  echo -e "\tCopy generatespamhaus.sh script to his destination (/usr/sbin/)."
 
- cp ./bin/generatespamhaus.sh /usr/sbin/generatespamhaus.sh
+ cp "${appLocation}"/bin/generatespamhaus.sh /usr/sbin/generatespamhaus.sh
  chmod 500 /usr/sbin/generatespamhaus.sh
 
  # ## Launch the script for the first time to generate the list.
@@ -66,16 +78,9 @@ function shUpd() {
  fi
 }
 
-function checkPackage() {
- if ! dpkg-query -s ipset > /dev/null 2>&1; then
-   echo -e "\e[33;1;208mWARNING:\e[0m Spamhaus is not configured. Missing package ipset."
-   echo -e "\tInstall the missing package with this command: apt-get install ipset"
-   exit 0
- fi
-}
-
+# ## Populate the Spamhaus node.
 function populateIpset() {
- # ## Populate the Spamhaus node.
+
  shDropList=$(ipset list spamhaus-nodes | wc -l)
 
  if [ "${shDropList}" -le 2 ]; then
@@ -92,10 +97,18 @@ function populateIpset() {
    touch "${customPath}"/spamhaus.ip
  fi
 
-
  while IFS= read -r SHDROPIP; do echo "${SHDROPIP%?}";
    ipset -q -A spamhaus-nodes "${SHDROPIP}"
  done < "${customPath}"/spamhaus.ip
+
+ # ## Verification.
+ ipset -t list spamhaus-nodes
+}
+
+function addCronTask() {
+ if [ -f './cron.d/spamhausupdate' ]; then
+   cp "${appLocation}"/cron.d/spamhausupdate /etc/cron.d/spamhausupdate
+ fi
 }
 
 # ############################################################################################
@@ -104,6 +117,7 @@ function populateIpset() {
 checkPackage
 shUpd
 populateIpset
+addCronTask
 
 echo -e "\n\e[33m[FINISH]\e[0m"
 

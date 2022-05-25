@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.0
+# * Version:            1.0.1
 # *
 # * Description:        Tool to configure install Geoip for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   February 23, 2022
+# * Change:   May 18, 2022
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -25,6 +25,9 @@ appYear=$(date +%Y)
 
 # ## Application informations.
 appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
+
+# ## Where the installer is located.
+appLocation=$(dirname "${0}")
 
 
 #############################################################################################
@@ -59,7 +62,7 @@ function geoipDep() {
 }
 
 function geoipUpd() {
- cp ./bin/geo-update.sh /usr/sbin/geo-update.sh
+ cp "${appLocation}"/bin/geo-update.sh /usr/sbin/geo-update.sh
  chmod 500 /usr/sbin/geo-update.sh
 
  # ## Launch the script for the first time to generate the list.
@@ -69,7 +72,7 @@ function geoipUpd() {
 }
 
 function geoipCron() {
- cp ./cron.d/geoipupdate /etc/cron.d/geoipupdate
+ cp "${appLocation}"/cron.d/geoipupdate /etc/cron.d/geoipupdate
 }
 
 
@@ -133,7 +136,7 @@ xtGeoipDep
 xtGeoipRep
 xtGeoipCheck
 
-# ## Update Mecanism
+# ## Update Mecanism.
 echo -e "\n\e[34m[GEOIP DATABASE]\e[0m"
 geoipUpd
 geoipCron

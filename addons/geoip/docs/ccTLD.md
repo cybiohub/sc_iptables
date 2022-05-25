@@ -1,3 +1,18 @@
+# List of country code
+
+
+Country code ZZ is for "Unknown or unspecified country" including local IP (RFC1918).
+
+```
+ZZ: Unknown or unspecified country
+
+```
+
+Two letter country code ISO-3166
+
+>**NOTE:** The TOR EXIT NODES list for the Tor Project is located in Germany (DE).
+
+```
 AF:Islamic Republic of Afghanistan Afghanistan
 AX:Åland Islands
 AL:Albania
@@ -248,3 +263,5 @@ EH:Western Sahara
 YE:Yemen
 ZM:Zambia
 ZW:Zimbabwe
+```
+

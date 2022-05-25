@@ -10,10 +10,11 @@
 # * Description:        Tool to populate Geoip databases for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   February 28, 2022
+# * Change:   May 18, 2022
 # *
 # * **************************************************************************
-# * chmod 500 geo-update.sh
+# * cp geo-update.sh /usr/sbin/geo-update.sh
+# * chmod 500 /usr/sbin/geo-update.sh
 # ****************************************************************************
 
 
@@ -43,7 +44,7 @@ osRelease() {
 function checkPackage() {
  APPDEP="${1}"
  if ! dpkg-query -s "${APPDEP}" > /dev/null 2>&1; then
-   echo -e "\e[31;1;208mERROR:\e[0m Fail to download database. Try to download manually https://download.db-ip.com/free/dbip-country-lite-${YR}-${MON}.csv.gz"
+   echo -e "\e[34;1;208mINFORMATION:\e[0m xt_geoip is not configured. Missing package ${APPDEP}."
    exit 0
  fi
 }

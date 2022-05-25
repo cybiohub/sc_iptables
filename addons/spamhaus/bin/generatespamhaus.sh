@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               generatespamhaus.sh
-# * Version:            1.1.0
+# * Version:            1.1.1
 # *
 # * Description:        Tool to populate Spamhaus list for iptables.
 # *
 # * Creation: February 25, 2022
-# * Change:   April 17, 2022
+# * Change:   May 18, 2022
 # *
 # * **************************************************************************
 # *
@@ -35,9 +35,10 @@ IPV6=0
 # ############################################################################################
 # ## FUNCTIONS
 
+# ## Check if ipset package is installed.
 function checkPackage() {
  if ! dpkg-query -s ipset > /dev/null 2>&1; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m Spamhaus is not configured. Missing package ipset."
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Dependencies are missing for Spamhaus. Missing package 'ipset'."
    exit 0
  fi
 }
@@ -76,11 +77,10 @@ function shIpv6() {
  fi
 }
 
-
 # ## Populating the ipset list.
 function popIpset() {
  # ## Populating the ipset list.
- if [[ -f "${customPath}/spamhaus.ip" && -n "${customPath}/spamhaus.ip" ]]; then
+ if [[ -f "${customPath}/spamhaus.ip" && -n "${customPath}" ]]; then
 
    ipset create new-spamhaus-nodes nethash
 
@@ -97,10 +97,11 @@ function popIpset() {
  fi
 }
 
+
 # ############################################################################################
 # ## EXECUTION
 
-checkPackage 'ipset'
+checkPackage
 
 shIpv4
 shIpv6
