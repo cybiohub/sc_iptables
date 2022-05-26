@@ -107,9 +107,10 @@ chmod 500 /usr/share/netfilter-persistent/plugins.d/40-iptables
 ln -sf /usr/share/netfilter-persistent/plugins.d/40-iptables "${rulesLocation}"
 
 # ## Copy IPv4 configuration script.
-cp ./conf/40-iptables.conf /etc/
-chmod 440 /etc/40-iptables.conf
-ln -sf /etc/40-iptables.conf "${rulesLocation}"
+mkdir /etc/iptables/
+cp ./conf/40-iptables.conf /etc/iptables/
+chmod 440 /etc/ptables/40-iptables.conf
+ln -sf /etc/iptables/40-iptables.conf "${rulesLocation}"
 
 
 # ## Copy IPv6 persistent script.

@@ -10,7 +10,7 @@
 # * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
 # * Creation: December 02, 2013
-# * Change:   April 16, 2022
+# * Change:   May 25, 2022
 # *
 # ****************************************************************************
 # *
@@ -63,13 +63,6 @@ if [ "${isConfigured}" == 'false' ] ; then
   echo -n -e '\e[38;5;208mWARNING: Customize the settings to match your environment. Then set the "isConfigured" variable to "true".\n\e[0m'
   exit 0
 fi
-
-
-# ############################################################################################
-# ## VARIABLES
-
-# ## Path where is located the custom rules file.
-declare -r customPath='/root/running_scripts/iptables'
 
 
 # ############################################################################################
