@@ -62,7 +62,7 @@ function geoipDep() {
 }
 
 function geoipUpd() {
- cp "${appLocation}"/bin/geo-update.sh /usr/sbin/geo-update.sh
+ cp "${appLocation}"/bin/geo-update.sh /usr/sbin/
  chmod 500 /usr/sbin/geo-update.sh
 
  # ## Launch the script for the first time to generate the list.

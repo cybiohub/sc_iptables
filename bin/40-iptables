@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.1.23
+# * Version:            1.1.24
 # *
 # * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
 # * Creation: December 02, 2013
-# * Change:   May 25, 2022
+# * Change:   July 14, 2022
 # *
 # ****************************************************************************
 # *
@@ -74,8 +74,9 @@ if [ "${AUTODETECTLAN}" -eq 1 ]; then
   declare -r INET
 
   LAN=$(ip address show "${INET}" | grep -F 'inet ' | cut -d ' ' -f 6 | head -1 | cut -d '/' -f 1)
-  declare -r LAN
 fi
+
+declare -r LAN
 
 
 # ############################################################################################

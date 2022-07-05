@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.24
+# * Version:            1.1.25
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   March 22, 2022
+# * Change:   July 14, 2022
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -109,9 +109,12 @@ ln -sf /usr/share/netfilter-persistent/plugins.d/40-iptables "${rulesLocation}"
 # ## Copy IPv4 configuration script.
 mkdir /etc/iptables/
 cp ./conf/40-iptables.conf /etc/iptables/
-chmod 440 /etc/ptables/40-iptables.conf
+chmod 440 /etc/iptables/40-iptables.conf
 ln -sf /etc/iptables/40-iptables.conf "${rulesLocation}"
 
+# ## Copy IPv4 empty custom rules file.
+cp ./conf/custom.rules "${rulesLocation}"
+chmod 440 "${rulesLocation}"/custom.rules
 
 # ## Copy IPv6 persistent script.
 cp ./bin/60-ip6tables /usr/share/netfilter-persistent/plugins.d/
