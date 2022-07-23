@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.1.24
+# * Version:            1.1.26
 # *
 # * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
 # *
 # * Creation: December 02, 2013
-# * Change:   July 14, 2022
+# * Change:   July 23, 2022
 # *
 # ****************************************************************************
 # *
@@ -107,28 +107,28 @@ if [ "${DNS}" -eq 1 ]; then
   # ## To reverse the conversion to see the domain name in plain text.
   # ## echo -n "0d6578616d706c652e636f6d00" | xxd -r -p
 
-  # Block DNS queries for ironmen-style.ru
+  # ## Block DNS queries for ironmen-style.ru
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d69726f6e6d656e2d7374796c6502727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q ironmen-style.ru"
 
-  # Block DNS queries for vizit-gamepro.ru
+  # ## Block DNS queries for vizit-gamepro.ru
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d76697a69742d67616d6570726f02727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q vizit-gamepro.ru"
 
-  # Block DNS queries for cpsc.gov
+  # ## Block DNS queries for cpsc.gov
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6370736302676f7600|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q cpsc.gov"
 
-  # Block DNS queries for leth.cc
+  # ## Block DNS queries for leth.cc
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6c65746802636300|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q leth.cc"
 
-  # Block DNS queries for hitwh.edu.cn
+  # ## Block DNS queries for hitwh.edu.cn
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d68697477680265647502636e00|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q hitwh.edu.cn"
 
-  # Block DNS queries for isc.com.
+  # ## Block DNS queries for isc.com.
   #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|00000000000103697363036f726700|" --algo bm --to 65535 --dport 53 -j DROP
 
-  # Block DNS queries for ripe.net
+  # ## Block DNS queries for ripe.net
   #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0000000000010472697065036e6574|" --algo bm --to 65535 --dport 53 -j DROP
 
-  # Block recursive DNS queries (flags 0X0100).
+  # ## Block recursive DNS queries (flags 0X0100).
   #iptables -A INPUT -d "${LAN}" -p udp --dport 53 -m u32 --u32 "0>>22&0x3C@10=0x01000001" -j DROP
 
   # ## PizzaSEO amplification DNS attack requests.
@@ -180,7 +180,7 @@ iptables -t mangle -A PREROUTING -p tcp -m tcp -m state --state NEW -m tcpmss ! 
 iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j LOG --log-prefix "IPTABLES: XMAS Paquet: "
 iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j DROP
 
-# INVALID packets
+# ## INVALID packets
 iptables -A INPUT -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID INPUT: "
 iptables -A INPUT -m state --state INVALID -j DROP
 
@@ -189,7 +189,6 @@ iptables -A FORWARD -m state --state INVALID -j DROP
 
 iptables -A OUTPUT -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID OUTPUT: "
 iptables -A OUTPUT -m state --state INVALID -j DROP
-
 
 # ## Reject is a syn-flood attack.
 #iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
@@ -236,7 +235,7 @@ iptables -A FORWARD -m recent --name portssh --remove
 # ## echo -W.X.Y.Z >/proc/net/xt_recent/portscan
 
 if [ "${SMB}" -eq 1 ]; then
-  # These rules add scanners to the portscan list, and log the attempt.
+  # ## These rules add scanners to the portscan list, and log the attempt.
   iptables -A INPUT -p tcp -m tcp --dport 139 -m recent --name portscan --set -j LOG --log-prefix "IPTABLES: Portscan INPUT: "
   iptables -A INPUT -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP
 
@@ -244,7 +243,7 @@ if [ "${SMB}" -eq 1 ]; then
   iptables -A FORWARD -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP
 fi
 
-# Protecting portscans (/proc/self/net/xt_recent/portscan)
+# ## Protecting portscans (/proc/self/net/xt_recent/portscan)
 # ## Attacking IP will be locked for 24 hours (3600 x 24 = 86400 seconds).
 iptables -A INPUT -m recent --name portscan --rcheck --seconds 86400 -j DROP
 iptables -A FORWARD -m recent --name portscan --rcheck --seconds 86400 -j DROP
@@ -520,7 +519,7 @@ source "${customPath}"/custom.rules
 
 
 # ############################################################################################
-# SERVICE CONFIGURATION
+# ## SERVICE CONFIGURATION
 
 # ## Virtual interface rules.
 if [ "${VIRTUALIP}" -eq 1 ]; then
@@ -551,13 +550,12 @@ if [ "${VNC}" -eq 1 ]; then
   fi
 fi
 
-# ## !!!!!!!!!! BUG A VERIFIER SI LA DEUXIEME LIGNE NE DOIT PAS ETRE UN DROP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ## !!!!!!!!!! BUG - NEED TO CHECK IF THE SECOND ENTRY MUST BE DROP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ## ICMP rules.
 if [ "${ICMP}" -eq 1 ]; then
   iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" --icmp-type echo-request -j ACCEPT
   iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" -j ACCEPT
 fi
-
 
 # ## Samba rules.
 if [ "${SMB}" -eq 1 ]; then
@@ -669,7 +667,6 @@ if [ "${LDAP}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 389 --j ACCEPT
 fi
 
-# ## UDP NECESSAIRE ?????????????????????????????????????????
 # ## LDAP/S rules.
 if [ "${LDAPS}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 636 --j ACCEPT
@@ -714,19 +711,32 @@ fi
 # ## OPENVPN SERVER rules.
 if [ "${OPENVPN}" -eq 1 ]; then
 
-  # ## Allow the UDP connection on the openvpn port.
-  iptables -A INPUT -i "${INET}" -m state --state NEW -p udp --dport "${VPN}" -j ACCEPT
+  if [ -z "${INET}" ]; then
+    INET=$(ip addr | grep 'state UP' | cut -d ':' -f 2 | sed 's/ //g' | head -n 1)
+    declare -r INET
+  fi
 
-  # ## Allow TUN/TAP interface connections to OpenVPN server.
+  # ## Allow the UDP/TCP connection on the OpenVPN port.
+  iptables -A INPUT -i "${INET}" -m state --state NEW -p "${PROTO}" --dport "${VPN}" -j ACCEPT
+
+  # ## Allow TUN/TAP interface connections to the OpenVPN server.
   iptables -A INPUT -i "${TUNNEL}" -j ACCEPT
 
-  # ## Allow TUN/TAP interface connections to be forwarded through other interfaces
+  # ## Allow TUN/TAP interface connections to be forwarded through other interfaces.
   iptables -A FORWARD -i "${TUNNEL}" -j ACCEPT
   iptables -A FORWARD -i "${TUNNEL}" -o "${INET}" -m state --state RELATED,ESTABLISHED -j ACCEPT
   iptables -A FORWARD -i "${INET}" -o "${TUNNEL}" -m state --state RELATED,ESTABLISHED -j ACCEPT
 
+  # ## Needed with the following directive to the server configuration file: push "redirect-gateway def1".
+  iptables -t nat -A POSTROUTING -s 192.168.40.0/24 -o "${INET}" -j MASQUERADE
+
   # ## If your default iptables OUTPUT value is not ACCEPT.
-  # iptables -A OUTPUT -o "${TUNNEL}" -j ACCEPT
+  iptables -A OUTPUT -o "${TUNNEL}" -j ACCEPT
+
+  # ## For the passthrough.
+  if [ "${PASSTHROUGH}" -eq 1 ]; then
+    echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+  fi
 fi
 
 # ## VPS SLA rules.
@@ -736,9 +746,8 @@ if [ "${VPSSLA}" -eq 1 ]; then
   done
 fi
 
-
 # ## For debug purpose only.
-# nc -l 0.0.0.0 -p 1300
+# ## nc -l 0.0.0.0 -p 1300
 #iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 1300 -j ACCEPT
 
 
@@ -760,11 +769,12 @@ fi
 # ############################################################################################
 # ## LOG PARAMETERS
 
-# Audit rules.
+# ## Audit rules.
 iptables -N LOGGING
 iptables -A INPUT -j LOGGING
 iptables -A OUTPUT -j LOGGING
 #iptables -A LOGGING -m limit --limit 2/min -j LOG --log-prefix "IPTABLES: Limit: " --log-level 4
 #iptables -A LOGGING -j DROP
+
 
 # ## END

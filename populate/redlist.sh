@@ -38,7 +38,7 @@ appVersion='0.1.0'
 # ## VERIFICATION
 
 # ## Check if the script are running under root user.
-if [ "${EUID}" -ne '0' ] ; then
+if [ "${EUID}" -ne 0 ] ; then
  echo -e "\n\e[34m${appHeader}\e[0m\n"
  echo -e "\n\n\n\e[33mCAUTION: This script must be run as root.\e[0m"
  exit 0
@@ -149,4 +149,4 @@ esac
 # ## Exit.    
 exit 0
 
-# ## END
+# ## EN

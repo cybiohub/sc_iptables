@@ -54,12 +54,12 @@ else
 fi
 
 # ## Check Ubuntu version.
- release=$(lsb_release -r | awk -F " " '{print $2}')
+release=$(lsb_release -r | awk -F " " '{print $2}')
 
- if [[ "${release:0:2}" =~ ^(16|18)$ ]]; then
-   echo -e "\e[31;1;208mERROR:\e[0m Your version of Ubuntu is too old (Ubuntu ${release}). It will not support Geoip addon. Please use Ubuntu 20.04 and above."
-   echo -e "For Ubuntu 16.04 and 18.04, you can check this documentation: https://ultramookie.com/2020/07/geoip-blocking/"
- fi
+if [[ "${release:0:2}" =~ ^(16|18)$ ]]; then
+  echo -e "\e[31;1;208mERROR:\e[0m Your version of Ubuntu is too old (Ubuntu ${release}). It will not support Geoip addon. Please use Ubuntu 20.04 and above."
+  echo -e "For Ubuntu 16.04 and 18.04, you can check this documentation: https://ultramookie.com/2020/07/geoip-blocking/"
+fi
 
 
 # #################################################################
@@ -124,8 +124,12 @@ ln -sf /usr/share/netfilter-persistent/plugins.d/60-ip6tables "${rulesLocation}"
 # ## Create separated log for iptables.
 iptablesLog
 
+# ## Add statistic tools for iptables.log.
+attTool
+
 # ## Last message.
 echo -e "\e[38;5;208mWARNING: Please configure the 40-iptables scripts before restarting.\e[0m\n vim /etc/40-iptables.conf"
+echo -e "\n Also there are several 'add-ons' in the addons directory you may want to install\n\to geoip\n\to redlist\n\t o spamhaus\n\to torbulkexit\n"
 
 
 # ## Exit.

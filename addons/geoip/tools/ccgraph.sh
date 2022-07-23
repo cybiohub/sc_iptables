@@ -56,7 +56,7 @@ function genGraph() {
  # ## Character used to print bar chart.
  barchr='+'
 
- # ## current min, max values [from 'ps' output]
+ # ## Current min, max values.
  vmin=1
  vmax=$(echo "${countryCode}" | awk 'BEGIN {max=0} {if($1>max) max=$1} END {print max}')
 
