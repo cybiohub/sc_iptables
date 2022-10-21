@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               redlist.sh
-# * Version:            0.1.0
+# * Version:            0.2.0
 # *
 # * Description:        Tool to Add/Remove IP Address in redlist-node ipset for iptables.
 # *
 # * Creation: March 29, 2022
-# * Change:   
+# * Change:   October 220, 2022
 # *
 # * **************************************************************************
 # * chmod 500 redlist.sh
@@ -29,9 +29,12 @@ customPath='/root/running_scripts/iptables/redlist.ip'
 # ## Retrieval of date and year
 appYear=$(date +%Y)
 
+# ## Path
+declare -r appPath="$(which ipset)"
+
 # ## Application informations.
 appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
-appVersion='0.1.0'
+appVersion='0.2.0'
 
 
 #############################################################################################
@@ -42,9 +45,6 @@ if [ "${EUID}" -ne 0 ] ; then
  echo -e "\n\e[34m${appHeader}\e[0m\n"
  echo -e "\n\n\n\e[33mCAUTION: This script must be run as root.\e[0m"
  exit 0
-else
- echo -e "\n\e[34m${appHeader}\e[0m"
- printf '%.s─' $(seq 1 "$(tput cols)")
 fi
 
 # ## Check if the redlist ip list file exist.
@@ -57,12 +57,17 @@ fi
 # #################################################################
 # ## FUNCTIONS
 
+function header(){
+ echo -e "\n\e[34m${appHeader}\e[0m"
+ printf '%.s─' $(seq 1 "$(tput cols)")
+}
+
 # ## Add an IP address to the Redlist. 
 function addIp {
  read -p "IP Address: " ip;
  checkIp "${ip}" "${FUNCNAME}"
 
- ipset --add redlist-nodes "${ip}"
+ "${appPath}" --add redlist-nodes "${ip}"
 }
 
 # ## Delete an IP address to the Redlist. 
@@ -70,14 +75,16 @@ function delIp() {
  read -p "IP Address: " ip;
  checkIp "${ip}" "${FUNCNAME}"
 
- ipset --del redlist-nodes "${ip}"
+ "${appPath}" --del redlist-nodes "${ip}"
 }
 
 # ##
 function populate() {
- while IFS= read -r REDIP; do echo "${REDIP%?}";
-   ipset -q -A redlist-nodes "${REDIP}"
- done < "${customPath}"
+ if [ -f "${customPath}" ]; then
+   while IFS= read -r REDIP; do echo "${REDIP%?}";
+     "${appPath}" -q -A redlist-nodes "${REDIP}"
+   done < "${customPath}"
+ fi
 }
 
 # ##
@@ -87,7 +94,7 @@ function checkIp() {
 
  if expr "${ipv4}" : '[1-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
    for i in 1 2 3 4; do
-     if [ $(echo "${ipv4}" | cut -d. -f$i) -gt 255 ]; then
+     if [ "$(echo ${ipv4}" | cut -d. -f$i) -gt 255 ]; then
        echo -e "Not a valid ip address (${ipv4})."
        $retrycheck
      fi
@@ -99,20 +106,26 @@ function checkIp() {
  fi
 }
 
-# ##
+# ## Displays all IP addresses in the list.
 function showList() {
- ipset list redlist-nodes
+ "${appPath}" list redlist-nodes | tail -n +9
 }
 
-# ##
+# ## Displays list information.
+function infoList() {
+ "${appPath}" list redlist-nodes | head -n 7
+}
+
+# ## Makes a backup of the active list.
 function backupList() {
  read -p "File name (redlist.bak): " bak;
- ipset list redlist-nodes > "${bck:-redlist.bak}"
+ bak=${bak:-redlist.bak}
+ "${appPath}" list redlist-nodes > "${bak}"
 }
 
-# ## Show the version of this app (hidden option).
+# ## Show the version of this app (ready to use with Ansible or Zabbix).
 function version() {
- echo -e "Version: ${appVersion}\n"
+ echo -e "${appVersion}"
 }
 
 
@@ -122,26 +135,44 @@ function version() {
 # ## MENU
 
 case "${1}" in
-  add)
+  -add|add)
+        header
         addIp
   ;;
-  del)
+  -del|remove)
+        header
         delIp
   ;;
-  populate)
+  -pop|populate)
+        header
         populate
   ;;
-  backup)
+  -back|backup)
+        header
         backupList
   ;;
-  showlist)
-       showList
+  -list|list)
+        header
+        showList
   ;;
-  version)
+  -info|info)
+        header
+        infoList
+  ;;
+  -ver|version)
         version
   ;;
   *)
-  echo -e 'Options: add | del | populate | showlist | backup\n'
+  header
+  echo -e "\n\n  Usage: ${0##*/} [options]\n"
+  echo -e '\n  General options:
+    -add,  [add]\t\t# Add an IP address to the list.
+    -del,  [remove]\t\t# Remove an IP address from the list.
+    -pop,  [populate]\t\t# Bulk add IP addresses by file.
+    -back, [backup]\t\t# Make a backup of the loaded list.
+    -list, [list]\t\t# Show the list of all IP in the list.
+    -info, [info]\t\t# Show informations of this list [IP or NETWORK].
+    -ver,  [version]\t\t# Show the program version.\n'
   ;;
 esac
 
@@ -149,4 +180,4 @@ esac
 # ## Exit.    
 exit 0
 
-# ## EN
+# ## END
