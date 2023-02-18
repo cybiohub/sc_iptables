@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.1
+# * Version:            1.0.0
 # *
-# * Description:        Tool to configure install TOR bulk next list for iptables.
+# * Description:        Tool to configure install KillNet DDoS list for iptables.
 # *
-# * Creation: September 07, 2021
-# * Change:   February 17, 2023
+# * Creation: February 17, 2023
+# * Change:   
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -32,6 +32,10 @@ appYear=$(date +%Y)
 
 # ## Application informations.
 appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
+
+# ## Download parameters.
+wgetRetry=3
+wgetTimeout=3
 
 
 #############################################################################################
@@ -61,7 +65,7 @@ function ipsetIns() {
 }
 
 # ## Create a place for rules if they don't exist.
-function torLocation() {
+function knLocation() {
  if [ ! -d "${rulesLocation}" ]; then
    mkdir -p "${rulesLocation}"
  fi
@@ -69,33 +73,34 @@ function torLocation() {
 
 # ##
 function copyApp() {
- cp ./sbin/generatetorbulkexit.sh "${rulesLocation}"/
- chmod 500 "${rulesLocation}"/generatetorbulkexit.sh
+ cp ./bin/generatekillnet.sh "${rulesLocation}"/
+ chmod 500 "${rulesLocation}"/generatekillnet.sh
 }
-
 
 # ##
 function ipsetUpd() { 
- # ## Download Tor bulk exit list.
- wget -T3 -q https://check.torproject.org/torbulkexitlist -O "${rulesLocation}"/torbulkexit.ip || rm -f "${rulesLocation}"/torbulkexit.ip
+ # ## Download KillNet DDoS list.
+ wget -t"${wgetRetry}" -T"${wgetTimeout}" -q -O - https://raw.githubusercontent.com/securityscorecard/SSC-Threat-Intel-IoCs/master/KillNet-DDoS-Blocklist/proxylist.txt -O "${rulesLocation}"/killnet.ip || rm -f "${rulesLocation}"/killnet.ip 
 
- # ## Populate the Tor node.
- shTorList=$(ipset list tor-nodes | wc -l)
+ logger -t killnet -p user.info "Download complete."
 
- if [ "${shTorList}" -le 2 ]; then
-   ipset create tor-nodes iphash
+ # ## Populate the KillNet node.
+ shKnList=$(ipset list killnet-nodes | wc -l)
+
+ if [ "${shKnList}" -le 2 ]; then
+   ipset create killnet-nodes iphash
  fi
 
  # ## Check if the Spamhaus IP list file exist.
- if [ ! -f "${rulesLocation}"/torbulkexit.ip ]; then
-   touch "${rulesLocation}"/torbulkexit.ip
+ if [ ! -f "${rulesLocation}"/killnet.ip ]; then
+   touch "${rulesLocation}"/killnet.ip
  fi
 
- # ## Populate TORIP chain.
- cat "${rulesLocation}"/torbulkexit.ip | while read -r TORIP; do ipset -q -A tor-nodes "${TORIP}"; done
+ # ## Populate KNIP chain.
+ cat "${rulesLocation}"/killnet.ip | awk -F ":" '{print $1}' | while read -r KNIP;do ipset -q -A killnet-nodes "${KNIP}"; done
 
- # ## Copie cron file for torbulkexit.
- cp ./cron.d/torlistupdate /etc/cron.d/
+ # ## Copie cron file for KillNet DDoS.
+ cp ./cron.d/killnetupdate /etc/cron.d/
 }
 
 
@@ -103,7 +108,7 @@ function ipsetUpd() {
 # ## EXECUTION
 
 ipsetIns
-torLocation
+knLocation
 copyApp
 ipsetUpd
 
@@ -113,10 +118,10 @@ ipsetUpd
 
 # ## Example.
 echo -e "\n\e[34m[EXAMPLE]\e[0m"
-echo -e '\t iptables -N TORDENY'
-echo -e '\t iptables -A INPUT -j TORDENY'
-echo -e '\t iptables -A TORDENY -m set --match-set tor-nodes src -j LOG --log-prefix "IPTABLES: TOR "'
-echo -e '\t iptables -A TORDENY -m set --match-set tor-nodes src -j DROP'
+echo -e '\t iptables -N KNDENY'
+echo -e '\t iptables -A INPUT -j KNDENY'
+echo -e '\t iptables -A KNDENY -m set --match-set killnet-nodes src -j LOG --log-prefix "IPTABLES: KILLNET "'
+echo -e '\t iptables -A KNDENY -m set --match-set killnet-nodes src -j DROP'
 
 
 # ## Exit 0

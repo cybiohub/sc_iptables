@@ -2,16 +2,16 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:		(c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:		(c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               tornodes.sh
-# * Version:            1.0.0
+# * Version:            1.0.1
 # *
-# * Comment:            Script to manually execute tor exit nodes rules.
+# * Description:        Script to manually execute tor exit nodes rules.
 # *			Use 40-iptables instead of this script.
 # *
 # * Creation: February 26, 2022
-# * Change:   May 18, 2022
+# * Change:   january 26, 2023
 # *
 # ****************************************************************************
 # *

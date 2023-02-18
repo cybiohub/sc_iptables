@@ -2,19 +2,23 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               geo-update.sh
-# * Version:            1.0.1
+# * Version:            1.0.2
 # *
 # * Description:        Tool to populate Geoip databases for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   May 18, 2022
+# * Change:   January 26, 2023
 # *
 # * **************************************************************************
-# * cp geo-update.sh /usr/sbin/geo-update.sh
+# *
 # * chmod 500 /usr/sbin/geo-update.sh
+# *
+# * vim /etc/cron.d/geoipupdate
+# *   30 19 * * * root /usr/sbin/geo-update.sh
+# *
 # ****************************************************************************
 
 
@@ -58,7 +62,7 @@ osRelease
 checkPackage 'xtables-addons-common'
 
 # ## Downloading database.
- if ! wget --timeout=${timeOut} https://download.db-ip.com/free/dbip-country-lite-"${YR}"-"${MON}".csv.gz -O /usr/share/xt_geoip/dbip-country-lite.csv.gz; then
+ if ! wget --timeout="${timeOut}" https://download.db-ip.com/free/dbip-country-lite-"${YR}"-"${MON}".csv.gz -O /usr/share/xt_geoip/dbip-country-lite.csv.gz; then
    echo -e "\e[31;1;208mERROR:\e[0m Fail to download database. Try to download manually https://download.db-ip.com/free/dbip-country-lite-${YR}-${MON}.csv.gz"
  else
    gunzip /usr/share/xt_geoip/dbip-country-lite.csv.gz

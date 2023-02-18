@@ -2,7 +2,7 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
 # * Version:            1.1.26
@@ -32,14 +32,12 @@
 # *
 # * CRON
 # * vim /etc/cron.d/torlistupdate
-# * # ## TOR (Adjust the value of the path with that of the customPath parameter)
-# * 30 19 * * * root "wget -q -O - "https://check.torproject.org/torbulkexitlist" > /root/running_scripts/iptables/torbulkexit.ip"
+# *   # ## TOR (Adjust the value of the path with that of the customPath parameter)
+# *   30 19 * * * root "wget -q -O - "https://check.torproject.org/torbulkexitlist" > /root/running_scripts/iptables/torbulkexit.ip"
 # *
 # * GEOIP
-# * vim /etc/cron.d/geoipupdate
-# * 30 19 * * * root /usr/sbin/geo-update.sh
-# *
-# * cp geo-update.sh /usr/sbin/geo-update.sh
+# *   vim /etc/cron.d/geoipupdate
+# *   30 19 * * * root /usr/sbin/geo-update.sh
 # *
 # ****************************************************************************
 
@@ -454,6 +452,39 @@ if [ "${SPAMHAUSDENY}" -eq 1 ]; then
 
     #iptables -A OUTPUT -m set --match-set spamhaus-nodes src -j LOG --log-prefix "IPTABLES: SPAMHAUS OUTPUT: "
     #iptables -A OUTPUT -m set --match-set spamhaus-nodes src -j DROP
+  fi
+fi
+
+# ## KILLNET DDOS.
+if [ "${KILLNETDENY}" -eq 1 ]; then
+
+  IPSET_PKG=$(dpkg-query -W --showformat='${Status}\n' "ipset" | grep -c "install ok installed")
+  if [ "$IPSET_PKG" -eq 0 ]; then
+    echo -e "ERROR: KILLNET extra protection security skipped. Missing dependancy (ipset)."
+  else
+    knList=$(ipset list killnet-nodes | wc -l)
+
+    if [ "${knList}" -le 2 ]; then
+      ipset create killnet-nodes iphash
+    fi
+
+    # ## Check if the custom path exist. If it does not exist, create it.
+    if [ ! -d "${customPath}" ]; then
+      mkdir -p "${customPath}"
+    fi
+
+    # ## Check if the KillNet ip list file exist.
+    if [ ! -f "${customPath}/killnet.ip" ]; then
+      touch "${customPath}/killnet.ip"
+    fi
+
+    cat "${customPath}"/killnet.ip | awk -F ":" '{print $1}' | while read -r KNIP;do ipset -q -A killnet-nodes "${KNIP}"; done
+
+    iptables -N KILLNET
+    iptables -A INPUT -j KILLNET
+
+    iptables -A KILLNET -m set --match-set killnet-nodes src -j LOG --log-prefix "IPTABLES: KILLNET: "
+    iptables -A KILLNET -m set --match-set killnet-nodes src -j DROP
   fi
 fi
 

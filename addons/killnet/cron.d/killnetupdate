@@ -1,0 +1,2 @@
+# ## KillNet DDoS (Adjust the value of the path with that of the customPath parameter)
+30 19 * * * root /usr/sbin/generatekillnet.sh
