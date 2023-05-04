@@ -107,7 +107,10 @@ chmod 500 /usr/share/netfilter-persistent/plugins.d/40-iptables
 ln -sf /usr/share/netfilter-persistent/plugins.d/40-iptables "${rulesLocation}"
 
 # ## Copy IPv4 configuration script.
-mkdir /etc/iptables/
+if [ ! -d '/etc/iptables/' ]; then
+  mkdir /etc/iptables/
+fi
+
 cp ./conf/40-iptables.conf /etc/iptables/
 chmod 440 /etc/iptables/40-iptables.conf
 ln -sf /etc/iptables/40-iptables.conf "${rulesLocation}"
@@ -128,8 +131,8 @@ iptablesLog
 attTool
 
 # ## Last message.
-echo -e "\e[38;5;208mWARNING: Please configure the 40-iptables scripts before restarting.\e[0m\n vim /etc/40-iptables.conf"
-echo -e "\n Also there are several 'add-ons' in the addons directory you may want to install\n\to geoip\n\to redlist\n\t o spamhaus\n\to torbulkexit\n"
+echo -e "\e[38;5;208mWARNING: Please configure the 40-iptables scripts before restarting.\e[0m\n vim /etc/iptables/40-iptables.conf"
+echo -e "\n Also there are several 'add-ons' in the addons directory you may want to install\n\to geoip\n\to redlist\n\to spamhaus\n\to torbulkexit\n"
 
 
 # ## Exit.
