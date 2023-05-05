@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.25
+# * Version:            1.1.26
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   July 14, 2022
+# * Change:   May 04, 2023
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -22,6 +22,7 @@
 
 # ## Two possible choices:netfilter-persistent or iptables-persistent.
 readonly fwPersistent='iptables-persistent'
+readonly fwDependency='xtables-addons-common ipset geoip-bin geoip-database'
 
 # ## Do not put the trailing slash.
 readonly rulesLocation='/root/running_scripts/iptables'
@@ -96,6 +97,8 @@ function baseDirectory() {
 if ! dpkg-query -s "${fwPersistent}" > /dev/null 2>&1; then
   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing ${fwPersistent} package."
   apt-get install "${fwPersistent}"
+
+  apt-get install "${fwDependency}"
 fi
 
 # ## Create the directories for the rules and admin script if they do not exist.

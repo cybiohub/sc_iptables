@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               60-ip6tables.sh
-# * Version:            1.1.3
+# * Version:            1.1.4
 # *
 # * Description:        Script to customize the IPv6 rules of firewall.
 # *
 # * Creation: December 02, 2013
-# * Change:   July 19, 2022
+# * Change:   March 07, 2023
 # *
 # ****************************************************************************
 # *
@@ -25,10 +25,20 @@ sleep 3
 
 
 # ############################################################################################
-# ## INTERFACES
+# ## VARIABLES
 
 # ## Definition of interfaces.
 declare -r LAN6='0000:0000:000:0000::0aaa/128'
+
+declare -r version='1.1.3'
+
+# ############################################################################################
+# ## VERSION
+
+if [ "${1}" == 'version' ]; then
+  echo "${version}"
+  exit 0
+fi 
 
 
 # ############################################################################################
