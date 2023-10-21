@@ -1,9 +1,12 @@
 #! /bin/bash
 #set -x
 
-cp 20-iptables.conf /etc/rsyslog.d/20-iptables.conf
-
-systemctl restart rsyslog.service
+if [ ! -f "/etc/rsyslog.d/20-iptables.conf" ]; then
+  cp 20-iptables.conf /etc/rsyslog.d/20-iptables.conf
+  systemctl restart rsyslog.service
+else
+  echo "The file already exist."
+fi
 
 # ## Exit.
 exit 0

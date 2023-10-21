@@ -622,9 +622,14 @@ if [ "${FTP}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp --dport 50000:59000 -m state --state RELATED,ESTABLISHED,NEW -j ACCEPT
 fi
 
-# ## DHCP rules.
-if [ "${DHCP}" -eq 1 ]; then
-  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 68:69 -j ACCEPT
+# ## DHCP Client rules.
+if [ "${DHCPCLIENT}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 68 -j ACCEPT
+fi
+
+# ## DHCP Server/Relay rules.
+if [ "${DHCPSERVER}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 67 -j ACCEPT
 fi
 
 # ## NTP rules.

@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.26
+# * Version:            1.1.27
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   May 04, 2023
+# * Change:   May 05, 2023
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -70,7 +70,14 @@ function iptablesLog() {
  cp rsyslog/20-iptables.conf /etc/rsyslog.d/20-iptables.conf
  systemctl restart rsyslog.service
 
+ # ## Create an empty file by default.
+ touch /var/log/iptables.log
+ chmod 640 /var/log/iptables.log
+
  cp logrotate/iptables /etc/logrotate.d/
+
+ mkdir -p /root/running_scripts/iptables/logrotate/
+ cp logrotate/country.sh /root/running_scripts/iptables/logrotate/
 }
 
 function attTool() {
