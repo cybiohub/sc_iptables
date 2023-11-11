@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.1.27
+# * Version:            1.2.29
 # *
-# * Description:        Script to customize the IPv4 rules of a dynamic firewall interface.
+# * Description:        Script to customize IPv4 firewall rules.
 # *
 # * Creation: December 02, 2013
-# * Change:   May 04, 2023
+# * Change:   November 08, 2023
 # *
 # ****************************************************************************
 # *
@@ -88,10 +88,8 @@ iptables -P OUTPUT ACCEPT
 
 # ## Loopback rules.
 iptables -A INPUT -i lo -j ACCEPT
-
-
-# ############################################################################################
-# ## TEMPORARY RULES
+iptables -A OUTPUT -o lo -j ACCEPT 
+iptables -A INPUT -s 127.0.0.0/8 -j DROP
 
 
 # ############################################################################################
@@ -105,25 +103,25 @@ if [ "${DNS}" -eq 1 ]; then
   # ## To reverse the conversion to see the domain name in plain text.
   # ## echo -n "0d6578616d706c652e636f6d00" | xxd -r -p
 
-  # ## Block DNS queries for ironmen-style.ru
+  # ## Block DNS queries for ironmen-style.ru.
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d69726f6e6d656e2d7374796c6502727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q ironmen-style.ru"
 
-  # ## Block DNS queries for vizit-gamepro.ru
+  # ## Block DNS queries for vizit-gamepro.ru.
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d76697a69742d67616d6570726f02727500|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q vizit-gamepro.ru"
 
-  # ## Block DNS queries for cpsc.gov
+  # ## Block DNS queries for cpsc.gov.
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6370736302676f7600|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q cpsc.gov"
 
-  # ## Block DNS queries for leth.cc
+  # ## Block DNS queries for leth.cc.
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d6c65746802636300|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q leth.cc"
 
-  # ## Block DNS queries for hitwh.edu.cn
+  # ## Block DNS queries for hitwh.edu.cn.
   iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0d68697477680265647502636e00|" --algo bm --from 40 --to 51 --dport 53 -j DROP -m comment --comment "DROP DNS Q hitwh.edu.cn"
 
   # ## Block DNS queries for isc.com.
   #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|00000000000103697363036f726700|" --algo bm --to 65535 --dport 53 -j DROP
 
-  # ## Block DNS queries for ripe.net
+  # ## Block DNS queries for ripe.net.
   #iptables -A INPUT -d "${LAN}" -p udp -m string --hex-string "|0000000000010472697065036e6574|" --algo bm --to 65535 --dport 53 -j DROP
 
   # ## Block recursive DNS queries (flags 0X0100).
@@ -137,6 +135,7 @@ if [ "${DNS}" -eq 1 ]; then
   # ## The below rule examines the IP header to find the start of UDP's data, and examines DNS flags for a refused response. When found the traffic it is logged.
   #iptables -A OUTPUT -s YOUR_DNS_SERVER_IP_ADDRESS -p udp -m udp --sport 53 -m u32 --u32 "0x0>>0x16&0x3c@0x8&0x8005=0x8005" -j LOG --log-prefix "IPTABLES: OUTBOUND DNS Query Refused Response: "
 fi
+
 
 # ## ####################################
 # ## DEFAULT
@@ -178,7 +177,7 @@ iptables -t mangle -A PREROUTING -p tcp -m tcp -m state --state NEW -m tcpmss ! 
 iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j LOG --log-prefix "IPTABLES: XMAS Paquet: "
 iptables -A INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j DROP
 
-# ## INVALID packets
+# ## INVALID packets.
 iptables -A INPUT -m state --state INVALID -j LOG --log-prefix "IPTABLES: INVALID INPUT: "
 iptables -A INPUT -m state --state INVALID -j DROP
 
@@ -191,13 +190,13 @@ iptables -A OUTPUT -m state --state INVALID -j DROP
 # ## Reject is a syn-flood attack.
 #iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
 
-# ## Block Invalid Packets (experimental)
+# ## Block Invalid Packets (experimental).
 #iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
 
-# ## Block New Packets That Are Not SYN (experimental)
+# ## Block New Packets That Are Not SYN (experimental).
 #iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP
 
-# ## Block Uncommon MSS Values (experimental)
+# ## Block Uncommon MSS Values (experimental).
 #iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
 
 
@@ -273,8 +272,8 @@ else
 
     if [ "${SMTPAUTH}" -eq 1 ]; then
       # ## GeoIP - SMTP AUTH
-      iptables -A INPUT -p tcp -m tcp --dport 2525 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP AUTH: "
-      iptables -A INPUT -p tcp -m tcp --dport 2525 -m geoip ! --source-country "${allowCountry}" -j DROP
+      iptables -A INPUT -p tcp -m tcp --dport 587 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP AUTH: "
+      iptables -A INPUT -p tcp -m tcp --dport 587 -m geoip ! --source-country "${allowCountry}" -j DROP
     fi
 
     if [ "${POP}" -eq 1 ]; then
@@ -301,23 +300,23 @@ else
       iptables -A INPUT -p tcp -m tcp --dport 993 -m geoip ! --source-country "${allowCountry}" -j DROP
     fi
 
-    #if [ "${SMTPS}" -eq 1 ]; then
-    #  # ## GeoIP - SMTP/S
-    #  iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP/S: "
-    #  iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j DROP
-    #fi
+    if [ "${SMTPS}" -eq 1 ]; then
+      # ## GeoIP - SMTP/S
+      iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP/S: "
+      iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
 
-    #if [ "${HTTP}" -eq 1 ]; then
-    #  # ## GeoIP - HTTP
-    #  iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTP: "
-    #  iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j DROP
-    #fi
+    if [ "${HTTP}" -eq 1 ]; then
+      # ## GeoIP - HTTP
+      iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTP: "
+      iptables -A INPUT -p tcp -m tcp --dport 80 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
 
-    #if [ "${HTTPS}" -eq 1 ]; then
-    #  # ## GeoIP - HTTPS
-    #  iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTPS: "
-    #  iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j DROP
-    #fi
+    if [ "${HTTPS}" -eq 1 ]; then
+      # ## GeoIP - HTTPS
+      iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country HTTPS: "
+      iptables -A INPUT -p tcp -m tcp --dport 443 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
   fi
 
   # ## GEOIP DENY.
@@ -529,6 +528,20 @@ if [ "${REDLIST}" -eq 1 ]; then
   fi
 fi
 
+# ############################################################################################
+# ## ONLINE SCANNER
+
+# ## Check if the custom path exist. If it does not exist, create it.
+if [ ! -d "${customPath}" ]; then
+  mkdir -p "${customPath}"
+fi
+
+# ## Check if the custom rules file exist.
+if [ -f "${customPath}"/scanners.rules ]; then
+  # ## Load custom rules.
+  source "${customPath}"/scanners.rules
+fi
+
 
 # ############################################################################################
 # ## CUSTOM RULES
@@ -622,6 +635,16 @@ if [ "${FTP}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp --dport 50000:59000 -m state --state RELATED,ESTABLISHED,NEW -j ACCEPT
 fi
 
+# ## MySQL/MariaDB rules.
+if [ "${MYSQL}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 3306 -j ACCEPT
+fi
+
+# ## MySQL/MariaDB localhost rules.
+if [ "${MYSQLOCAL}" -eq 1 ]; then
+  iptables -A INPUT -d '127.0.0.1' -p udp -m udp --dport 3306 -j ACCEPT
+fi
+
 # ## DHCP Client rules.
 if [ "${DHCPCLIENT}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 68 -j ACCEPT
@@ -656,18 +679,18 @@ fi
 
 # ## DNS Remote Master/Slave rules.
 if [ "${DNSERVER}" -eq 1 ]; then
-  for ipSlave in ${DNSREMOTE[*]}
+  for ipDnsServer in ${DNSREMOTE[*]}
   do
-    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
-    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
+    iptables -A INPUT -s "${ipDnsServer}" -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
+    iptables -A INPUT -s "${ipDnsServer}" -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT
 
-    iptables -A INPUT -s "${ipSlave}" -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
+    iptables -A INPUT -s "${ipDnsServer}" -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
   done
 fi
 
 # ## RNDC rules.
 if [ "${RNDC}" -eq 1 ]; then
-  iptables -A INPUT -s 149.56.128.12 -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 953 -j ACCEPT
 fi
 
 # ## SMTP rules.
@@ -677,32 +700,32 @@ fi
 
 # ## SMTP AUTH rules.
 if [ "${SMTPAUTH}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 2525 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 587 -j ACCEPT
 fi
 
 # ## SMTP/S rules.
 if [ "${SMTPS}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 465 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 465 -j ACCEPT
 fi
 
 # ## IMAP rules.
 if [ "${IMAP}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 143 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 143 -j ACCEPT
 fi
 
 # ## IMAP/S rules.
 if [ "${IMAPS}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 993 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 993 -j ACCEPT
 fi
 
 # ## POP rules.
 if [ "${POP}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 110 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 110 -j ACCEPT
 fi
 
 # ## POP/S rules.
 if [ "${POPS}" -eq 1 ]; then
-  iptables -A INPUT -s '184.162.239.249' -d "${LAN}" -p tcp -m tcp --dport 995 --j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 995 --j ACCEPT
 fi
 
 # ## LDAP rules.
@@ -771,7 +794,7 @@ if [ "${OPENVPN}" -eq 1 ]; then
   iptables -A FORWARD -i "${INET}" -o "${TUNNEL}" -m state --state RELATED,ESTABLISHED -j ACCEPT
 
   # ## Needed with the following directive to the server configuration file: push "redirect-gateway def1".
-  iptables -t nat -A POSTROUTING -s 192.168.40.0/24 -o "${INET}" -j MASQUERADE
+  iptables -t nat -A POSTROUTING -s "${VPNSUBNET}" -o "${INET}" -j MASQUERADE
 
   # ## If your default iptables OUTPUT value is not ACCEPT.
   iptables -A OUTPUT -o "${TUNNEL}" -j ACCEPT

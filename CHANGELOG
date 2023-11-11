@@ -1,4 +1,18 @@
-V1.1.28 -2023-05-04
+V1.1.29 - 2023-11-08
+
+## Added
+ - MySQL/MariaDB support.
+ - New IP range for Online Scanner.
+
+## Change
+ - Add new rules for loopback (IPv4 ans IPv6).
+
+## Fixed
+ - Missing INSTALL.md file.
+ - Set defaut ports for all services.
+ - Separation of custom rules file from those for online scanners.
+
+V1.1.28 - 2023-05-04
 
 ## Added
  - DHCP support

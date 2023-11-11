@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.27
+# * Version:            1.1.29
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   May 05, 2023
+# * Change:   November 08, 2023
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -32,11 +32,11 @@ readonly adminLocation='/root/admin_scripts/services/iptables'
 # #################################################################
 # ## VARIABLES
 
-# ## Actual date.
+# ## Current date.
 actualYear=$(date +"%Y")
 declare -r actualYear
 
-# ## Title header.
+# ## Header title.
 appHeader="(c) 2004-${actualYear}  Cybionet - Installation Wizard"
 declare -r appHeader
 
@@ -70,7 +70,7 @@ function iptablesLog() {
  cp rsyslog/20-iptables.conf /etc/rsyslog.d/20-iptables.conf
  systemctl restart rsyslog.service
 
- # ## Create an empty file by default.
+ # ## Creating an empty file by default.
  touch /var/log/iptables.log
  chmod 640 /var/log/iptables.log
 
