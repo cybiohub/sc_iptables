@@ -23,6 +23,9 @@ else
   echo "The file already exist."
 fi
 
+touch /var/log/iptables.log
+chown syslog:adm /var/log/iptables.log
+
 # ## Exit.
 exit 0
 

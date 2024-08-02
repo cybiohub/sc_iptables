@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2024  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.1
+# * Version:            1.0.2
 # *
 # * Description:        Tool to configure install Geoip for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   May 18, 2022
+# * Change:   August 02, 2024
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -62,7 +62,7 @@ function geoipDep() {
 }
 
 function geoipUpd() {
- cp "${appLocation}"/bin/geo-update.sh /usr/sbin/
+ cp "${appLocation}"/sbin/geo-update.sh /usr/sbin/
  chmod 500 /usr/sbin/geo-update.sh
 
  # ## Launch the script for the first time to generate the list.
@@ -87,11 +87,17 @@ function xtGeoipDep() {
  echo 'xt_geoip' > /etc/modules-load.d/xt_geoip.conf
  echo -e "\e[38;208mWARNING: A system restart is required.\e[0m"
 
- if [ -f '/usr/lib/xtables-addons/xt_geoip_build' ]; then
-   chmod 700 /usr/lib/xtables-addons/xt_geoip_build
+ if [ -f '/usr/libexec/xtables-addons/xt_geoip_build' ]; then
+   # ## For Ubuntu 22.04 an more.
+   chmod 700 /usr/libexec/xtables-addons/xt_geoip_build
  else
-   echo -e '\e[31;208mERROR: xtables-addons-common package is required.\e[0m'
-   exit 1
+   # ## For Ubuntu 18.04/20.04.
+   if [ -f '/usr/lib/xtables-addons/xt_geoip_build' ]; then
+     chmod 700 /usr/lib/xtables-addons/xt_geoip_build
+   else
+     echo -e '\e[31;208mERROR: xtables-addons-common package is required.\e[0m'
+     exit 1
+   fi
  fi
 
  # ## Manual loading of the xt_geoip module.

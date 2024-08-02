@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.2.29
+# * Version:            1.2.30
 # *
 # * Description:        Script to customize IPv4 firewall rules.
 # *
 # * Creation: December 02, 2013
-# * Change:   November 08, 2023
+# * Change:   June 19, 2024
 # *
 # ****************************************************************************
 # *
@@ -254,12 +254,15 @@ iptables -A FORWARD -m recent --name portscan --remove
 # ## EXTRA PROTECTION RULES
 
 # ## GEOIP
-# ## Check if GeoIP services is installed.
-if ! dpkg-query -s 'xtables-addons-common' > /dev/null 2>&1; then
-  echo -e "\e[31;1;208mERROR:\e[0m GEOIP extra protection security skipped. Missing dependency (xtables-addons-common or geoip-bin)."
-else
+
   # ## GEOIP ALLOW.
   if [ "${GEOIPALLOW}" -eq 1 ]; then
+
+    # ## Check if GeoIP services is installed.
+    if ! dpkg-query -s 'xtables-addons-common' > /dev/null 2>&1; then
+      echo -e "\e[33;1;208mWARNING:\e[0m GEOIP extra protection security skipped. Missing dependency (xtables-addons-common or geoip-bin)."
+    else
+
     # ## GeoIP.
     #iptables -A INPUT -m geoip ! --source-country CA  -j LOG --log-prefix "IPTABLES: Country Restriction: "
     #iptables -A INPUT -m geoip ! --source-country CA  -j DROP
@@ -321,15 +324,21 @@ else
 
   # ## GEOIP DENY.
   if [ "${GEOIPDENY}" -eq 1 ]; then
-    iptables -N GEOIPDENY
-    iptables -A INPUT -j GEOIPDENY
 
-    # ## Converting to array, because the iptables geoip has a fifteen country code limitation.
-    for denyCC in "${denyCountry[@]}"
-    do
-      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC} : "
-      iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j DROP
-    done
+    # ## Check if GeoIP services is installed.
+    if ! dpkg-query -s 'xtables-addons-common' > /dev/null 2>&1; then
+      echo -e "\e[33;1;208mWARNING:\e[0m GEOIP extra protection security skipped. Missing dependency (xtables-addons-common or geoip-bin)."
+    else
+      iptables -N GEOIPDENY
+      iptables -A INPUT -j GEOIPDENY
+
+      # ## Converting to array, because the iptables geoip has a fifteen country code limitation.
+      for denyCC in "${denyCountry[@]}"
+      do
+        iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j LOG --log-prefix "IPTABLES: Country Denied: ${denyCC} : "
+        iptables -A GEOIPDENY -m geoip --source-country "${denyCC}" -j DROP
+      done
+    fi
   fi
 fi
 
@@ -461,7 +470,7 @@ if [ "${KILLNETDENY}" -eq 1 ]; then
   # ## Check if IPSet services is installed	
   IPSET_PKG=$(dpkg-query -W --showformat='${Status}\n' "ipset" | grep -c "install ok installed")
   if [ "$IPSET_PKG" -eq 0 ]; then
-    echo -e "ERROR: KILLNET extra protection security skipped. Missing dependency (ipset)."
+    echo -e "\e[33;1;208mWARNING:\e[0m KILLNET extra protection security skipped. Missing dependency (ipset)."
   else
     knList=$(ipset list killnet-nodes | wc -l)
 
@@ -527,6 +536,7 @@ if [ "${REDLIST}" -eq 1 ]; then
     #iptables -A OUTPUT -m set --match-set redlist-nodes src -j DROP
   fi
 fi
+
 
 # ############################################################################################
 # ## ONLINE SCANNER
@@ -637,12 +647,12 @@ fi
 
 # ## MySQL/MariaDB rules.
 if [ "${MYSQL}" -eq 1 ]; then
-  iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 3306 -j ACCEPT
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 3306 -j ACCEPT
 fi
 
 # ## MySQL/MariaDB localhost rules.
 if [ "${MYSQLOCAL}" -eq 1 ]; then
-  iptables -A INPUT -d '127.0.0.1' -p udp -m udp --dport 3306 -j ACCEPT
+  iptables -A INPUT -d '127.0.0.1' -p tcp -m tcp --dport 3306 -j ACCEPT
 fi
 
 # ## DHCP Client rules.
@@ -655,7 +665,7 @@ if [ "${DHCPSERVER}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 67 -j ACCEPT
 fi
 
-# ## NTP rules.
+# ## NTP Server rules.
 if [ "${NTP}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 123 -j ACCEPT
 fi
@@ -671,7 +681,7 @@ if [ "${SNMP}" -eq 1 ]; then
  fi
 fi
 
-# ## DNS rules.
+# ## DNS Server rules.
 if [ "${DNS}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p udp -m udp --dport 53 -j ACCEPT
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 53 -j ACCEPT

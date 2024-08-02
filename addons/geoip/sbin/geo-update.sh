@@ -66,9 +66,17 @@ checkPackage 'xtables-addons-common'
    echo -e "\e[31;1;208mERROR:\e[0m Fail to download database. Try to download manually https://download.db-ip.com/free/dbip-country-lite-${YR}-${MON}.csv.gz"
  else
    gunzip /usr/share/xt_geoip/dbip-country-lite.csv.gz
+
    # ## Generate files.
-   /usr/lib/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip/ -S /usr/share/xt_geoip/
-   rm /usr/share/xt_geoip/dbip-country-lite.csv
+   if [ -f '/usr/libexec/xtables-addons/xt_geoip_build' ]; then
+     # ## For Ubuntu 22.04 and more.
+     /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip/ -i /usr/share/xt_geoip/dbip-country-lite.csv
+     rm /usr/share/xt_geoip/dbip-country-lite.csv
+   else
+     # ## For Ubuntu 18.04/20.04.
+     /usr/lib/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip/ -S /usr/share/xt_geoip/
+     rm /usr/share/xt_geoip/dbip-country-lite.csv
+   fi
  fi
 
 

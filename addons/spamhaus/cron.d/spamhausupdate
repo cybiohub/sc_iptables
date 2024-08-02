@@ -1,2 +1,2 @@
 # ## SPAMHAUS (Adjust the value of the path with that of the customPath parameter).
-30 19 * * * root /usr/sbin/generatespamhaus.sh
+30 19 * * * root /usr/sbin/generatespamhaus.sh >/dev/null 2>&1

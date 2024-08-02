@@ -1,3 +1,40 @@
+V1.1.33 - 2024-08-02
+
+## Added
+ - For the GeoIP module, support for Ubuntu 22.04+ and for Ubuntu 18.06 and less.
+ 
+## Fixed
+ - Corection on protocol for MySQL/MariaDB rules (again).
+ - Correction in install script for killnet (again).
+ - Adjustment to show message when Geoip protection for geoipdeny and geoipallow.
+
+## Change
+ - Replace the logrotate for iptables in the correct directory.
+ - Catch the error when checking the tor-nodes list with ipset when it does not exist.
+
+
+V1.1.32 - 2024-06-19
+
+## Change
+ - Remove the message when Geoip protection is not available.
+
+## Fixed
+ - Made the rsyslog manual installation script executable.
+ - The logrotate directory for the GeoIP module was not located in the correct place.
+
+
+V1.1.31 - 2023-12-05
+
+## Fixed
+ - Corection in install script for killnet.
+
+
+V1.1.30 - 2023-11-21
+
+## Fixed
+ - Correction on protocol for MySQL/MariaDB rules.
+
+
 V1.1.29 - 2023-11-08
 
 ## Added
@@ -12,6 +49,7 @@ V1.1.29 - 2023-11-08
  - Set defaut ports for all services.
  - Separation of custom rules file from those for online scanners.
 
+
 V1.1.28 - 2023-05-04
 
 ## Added
@@ -19,6 +57,7 @@ V1.1.28 - 2023-05-04
 
 ## Fixed
  - Bad correction of missing ipset package.
+
 
 V1.1.27 - 2023-01-26
 
@@ -29,6 +68,7 @@ V1.1.27 - 2023-01-26
  - Correction in generatespamhaus.sh script.
  - Correction in generatetorbulkexit.sh script.
  - Correction of cron task.
+
 
 V0.1.1.26 - 2022-07-23
 

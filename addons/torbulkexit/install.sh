@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2024  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.1
+# * Version:            1.1.2
 # *
 # * Description:        Tool to configure install TOR bulk next list for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   February 17, 2023
+# * Change:   August 02, 2024
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -80,7 +80,7 @@ function ipsetUpd() {
  wget -T3 -q https://check.torproject.org/torbulkexitlist -O "${rulesLocation}"/torbulkexit.ip || rm -f "${rulesLocation}"/torbulkexit.ip
 
  # ## Populate the Tor node.
- shTorList=$(ipset list tor-nodes | wc -l)
+ shTorList=$(ipset list tor-nodes 2>/dev/null | wc -l)
 
  if [ "${shTorList}" -le 2 ]; then
    ipset create tor-nodes iphash
