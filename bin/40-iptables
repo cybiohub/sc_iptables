@@ -2,42 +2,29 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2024  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.2.30
+# * Version:            1.2.0
 # *
 # * Description:        Script to customize IPv4 firewall rules.
 # *
 # * Creation: December 02, 2013
-# * Change:   June 19, 2024
+# * Change:   August 12, 2024
 # *
 # ****************************************************************************
 # *
 # * Dependancy: 
 # *   iptables-persistent or netfilter-persistent
-# *   xtables-addons-common
 # *   ipset
-# *   geoip-bin
-# *   geoip-database
 # *
-# *
-# *  apt-get install iptables-persistent xtables-addons-common ipset geoip-bin geoip-database
+# *  apt-get install iptables-persistent ipset
 # *
 # * **************************************************************************
 # *
 # * Location: /usr/share/netfilter-persistent/plugins.d/40-iptables
 # *
 # * chmod 500 /usr/share/netfilter-persistent/plugins.d/40-iptables
-# *
-# * CRON
-# * vim /etc/cron.d/torlistupdate
-# *   # ## TOR (Adjust the value of the path with that of the customPath parameter)
-# *   30 19 * * * root "wget -q -O - "https://check.torproject.org/torbulkexitlist" > /root/running_scripts/iptables/torbulkexit.ip"
-# *
-# * GEOIP
-# *   vim /etc/cron.d/geoipupdate
-# *   30 19 * * * root /usr/sbin/geo-update.sh
 # *
 # ****************************************************************************
 
@@ -84,7 +71,11 @@ declare -r LAN
 iptables -F
 iptables -P INPUT DROP
 iptables -P FORWARD DROP
-iptables -P OUTPUT ACCEPT
+if [ "${OUTBOUND}" -eq 1 ]; then
+  iptables -P OUTPUT DROP
+else
+  iptables -P OUTPUT ACCEPT
+fi
 
 # ## Loopback rules.
 iptables -A INPUT -i lo -j ACCEPT
@@ -152,10 +143,6 @@ fi
 #iptables -A INPUT -p tcp -m tcp --tcp-flags RST RST -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: RST FLOOD: "
 #iptables -A INPUT -p tcp -m tcp --tcp-flags RST RST -m limit --limit 2/second --limit-burst 2 -j ACCEPT
 
-# ## SMURF attack.
-iptables -A INPUT -p icmp -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: SMURF: "
-iptables -A INPUT -p icmp -m limit --limit 2/second --limit-burst 2 -j ACCEPT
-
 # ## NULL packets.
 iptables -A INPUT -p tcp --tcp-flags ALL NONE -j LOG --log-prefix "IPTABLES: NULL PAQUET: "
 iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
@@ -198,6 +185,9 @@ iptables -A OUTPUT -m state --state INVALID -j DROP
 
 # ## Block Uncommon MSS Values (experimental).
 #iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+
+# ## Silently drop all broadcast packets.
+#iptables -A INPUT -m pkttype --pkt-type broadcast -j DROP
 
 
 # ## ####################################
@@ -556,7 +546,7 @@ fi
 # ############################################################################################
 # ## CUSTOM RULES
 
-# ##
+# ## Define a CUSTOM string to put the custom rules found in the custom.rules file.
 iptables -N CUSTOM
 iptables -A INPUT -j CUSTOM
 
@@ -575,7 +565,37 @@ source "${customPath}"/custom.rules
 
 
 # ############################################################################################
-# ## SERVICE CONFIGURATION
+# ## OUTGOING SERVICES REQUESTS CONFIGURATION
+
+# ## Apply outbound restriction rules.
+if [ "${OUTBOUND}" -eq 1 ]; then
+  # ## Allows only ping requests (ICMP Echo Request).
+  iptables -A OUTPUT -p icmp --icmp-type echo-request -s 0/0 -j ACCEPT
+
+  # ## Allows outgoing SSH communications.
+  iptables -A OUTPUT -p tcp -m tcp --dport 22 -j ACCEPT
+
+  # ## Allows DNS resolution queries.
+  iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+  iptables -A OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+
+  # ## Allows web requests as well as for updating the operating system (apt).
+  iptables -A OUTPUT -p tcp -m tcp --match multiport --dports 80,443 -j ACCEPT
+
+  # ## Custom outgoing TCP ports allowed.
+  if [ -n "${OUTTCPPORTS}" ]; then
+    iptables -A OUTPUT -p tcp -m tcp --match multiport --dports "${OUTTCPPORTS}" -j ACCEPT
+  fi
+
+  # ## Custom outgoing UDP ports allowed.
+  if [ -n "${OUTUDPPORTS}" ]; then
+    iptables -A OUTPUT -p udp -m udp --match multiport --dports "${OUTUDPPORTS}" -j ACCEPT
+  fi
+fi
+
+
+# ############################################################################################
+# ## INBOUND SERVICES CONFIGURATION
 
 # ## Virtual interface rules.
 if [ "${VIRTUALIP}" -eq 1 ]; then
@@ -588,10 +608,14 @@ fi
 # ## SSH service.
 if [ "${RESTRICT}" -eq 1 ]; then
   for allowIp in "${AUTHORIZEDIP[@]}"; do
-    iptables -A INPUT -s "${allowIp}" -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -j ACCEPT
+    # ## SSH rules with extra precaution so that connections work even if the script crashes while running.
+    iptables -A INPUT -s "${allowIp}" -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -m state --state NEW,ESTABLISHED -j ACCEPT
+    iptables -A OUTPUT -p tcp --sport "${SSH}" -m state --state ESTABLISHED -j ACCEPT
   done
 else
-  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -j ACCEPT
+  # ## SSH rules with extra precaution so that connections work even if the script crashes while running.
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport "${SSH}" -m state --state NEW,ESTABLISHED -j ACCEPT
+  iptables -A OUTPUT -p tcp --sport "${SSH}" -m state --state ESTABLISHED -j ACCEPT
 fi
 
 # ## VNC rules.
@@ -606,11 +630,13 @@ if [ "${VNC}" -eq 1 ]; then
   fi
 fi
 
-# ## !!!!!!!!!! BUG - NEED TO CHECK IF THE SECOND ENTRY MUST BE DROP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # ## ICMP rules.
 if [ "${ICMP}" -eq 1 ]; then
+  # ## Allow ICMP (Tyep 0 & 8) with SMURF attack protection.
   iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" --icmp-type echo-request -j ACCEPT
-  iptables -A INPUT -p icmp -s 0/0 -d "${LAN}" -j ACCEPT
+
+  iptables -A INPUT -p icmp -m limit --limit 2/second --limit-burst 2 -j LOG --log-prefix "IPTABLES: SMURF: "
+  iptables -A INPUT -p icmp --icmp-type echo-reply -m limit --limit 2/second --limit-burst 2 -j ACCEPT
 fi
 
 # ## Samba rules.
@@ -832,6 +858,13 @@ fi
 
 # ## Communication rules already established.
 iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# ## Allows outgoing packets that are related to an already established connection.
+iptables -A OUTPUT -m state --state ESTABLISHED -j ACCEPT
+
+# ## Drop all other ICMP requests.
+iptables -A INPUT -p icmp -j DROP
+
 
 # ## Needed if you uses Virtual interface.
 if [ "${VIRTUALIP}" -eq 1 ]; then
