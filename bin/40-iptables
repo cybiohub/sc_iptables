@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2024  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.2.0
+# * Version:            1.2.1
 # *
 # * Description:        Script to customize IPv4 firewall rules.
 # *
 # * Creation: December 02, 2013
-# * Change:   August 12, 2024
+# * Change:   August 20, 2024
 # *
 # ****************************************************************************
 # *
@@ -579,6 +579,10 @@ if [ "${OUTBOUND}" -eq 1 ]; then
   iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
   iptables -A OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
 
+  # ## Allows NTP queries.
+  iptables -A OUTPUT -p udp -m udp --dport 123 -j ACCEPT
+  iptables -A OUTPUT -p tcp -m tcp --dport 123 -j ACCEPT
+  
   # ## Allows web requests as well as for updating the operating system (apt).
   iptables -A OUTPUT -p tcp -m tcp --match multiport --dports 80,443 -j ACCEPT
 
