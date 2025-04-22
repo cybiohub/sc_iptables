@@ -1,2 +1,2 @@
-# ## GEOIP (Adjust the value of the path with that of the customPath parameter)
+# ## GEOIP (Adjust the value of the path with that of the customPath parameter).
 30 19 * * * root /usr/sbin/geo-update.sh >/dev/null 2>&1

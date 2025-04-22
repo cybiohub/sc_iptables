@@ -2,15 +2,15 @@
 #set -x
 # ****************************************************************************
 # *
-# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2025  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.29
+# * Version:            1.1.30
 # *
 # * Description:        Script to install environment for 40-iptables.
 # *
 # * Creation: December 02, 2013
-# * Change:   November 08, 2023
+# * Change:   April 03, 2025
 # *
 # ****************************************************************************
 # * chmod 500 install.sh
@@ -54,7 +54,7 @@ else
   printf '%.s─' $(seq 1 "$(tput cols)")
 fi
 
-# ## Check Ubuntu version.
+# ## Checking Ubuntu version.
 release=$(lsb_release -r | awk -F " " '{print $2}')
 
 if [[ "${release:0:2}" =~ ^(16|18)$ ]]; then
@@ -75,9 +75,6 @@ function iptablesLog() {
  chmod 640 /var/log/iptables.log
 
  cp logrotate/iptables /etc/logrotate.d/
-
- mkdir -p /root/running_scripts/iptables/logrotate/
- cp logrotate/country.sh /root/running_scripts/iptables/logrotate/
 }
 
 function attTool() {

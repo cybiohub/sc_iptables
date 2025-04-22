@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2023  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2025  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.0.3
+# * Version:            1.0.4
 # *
 # * Description:        Tool to configure install KillNet DDoS list for iptables.
 # *
 # * Creation: February 17, 2023
-# * Change:   August 05, 2024
+# * Change:   January 10, 2025
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -78,8 +78,10 @@ function knLocation() {
 # ## Copy of the 'KillNet DDoS' generator script.
 function copyApp() {
  echo -e "Copy of the 'killnet' generator script \t\t\t[\e[32mOK\e[0m]"
- cp ./sbin/generatekillnet.sh "${rulesLocation}"/
- chmod 500 "${rulesLocation}"/generatekillnet.sh
+ cp ./sbin/generatekillnet.sh /usr/sbin/
+ chmod 500 /usr/sbin/generatekillnet.sh
+ 
+ ln -sf /usr/sbin/generatekillnet.sh "${rulesLocation}/generatekillnet.sh"
 }
 
 # ## Download and populate the KillNet DDoS node for the first time.

@@ -64,8 +64,11 @@ else
     touch "${customPath}"/shodan.ip
   fi
 
+  #wget https://github.com/cybiohub/sc_iptables/blob/main/addons/shodan/list/shodan.ip
+
+
   # ## Populate chain.
-  cat "${customPath}"/shodan.ip | awk -F ":" '{print $1}' | while read -r SHODANIP;do ipset -q -A new-shodan-nodes "${SHODANIP}"; done
+  cat "${customPath}"/shodan.ip | awk -F ":" '{print $1}' | while read -r SHODANIP;do ipset -q -A shodan-nodes "${SHODANIP}"; done
 
   iptables -N SHODAN
   iptables -A INPUT -j SHODAN

@@ -1,13 +1,12 @@
 /var/log/iptables.log
 { 
-        rotate 4
         weekly
+        rotate 10
         missingok
         notifempty
         compress
         delaycompress
-        sharedscripts
         postrotate
-                invoke-rc.d rsyslog rotate >/dev/null 2>&1 || true
+                [ ! -x /usr/lib/rsyslog/rsyslog-rotate ] || /usr/lib/rsyslog/rsyslog-rotate
         endscript
 }

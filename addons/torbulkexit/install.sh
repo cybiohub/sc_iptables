@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2024  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2025  Cybionet - Ugly Codes Division
 # *
 # * File:               install.sh
-# * Version:            1.1.2
+# * Version:            1.1.3
 # *
 # * Description:        Tool to configure install TOR bulk next list for iptables.
 # *
 # * Creation: September 07, 2021
-# * Change:   August 02, 2024
+# * Change:   January 10, 2025
 # *
 # * **************************************************************************
 # * chmod 500 install.sh
@@ -67,10 +67,12 @@ function torLocation() {
  fi
 }
 
-# ##
+# ## Copy the script to regenerate the ipset for the "Tor Exit Nodes".
 function copyApp() {
- cp ./sbin/generatetorbulkexit.sh "${rulesLocation}"/
- chmod 500 "${rulesLocation}"/generatetorbulkexit.sh
+ cp ./sbin/generatetorbulkexit.sh /usr/sbin/
+ chmod 500 /usr/sbin/generatetorbulkexit.sh
+
+ ln -sf /usr/sbin/generatetorbulkexit.sh "${rulesLocation}/generatetorbulkexit.sh"
 }
 
 
@@ -79,7 +81,7 @@ function ipsetUpd() {
  # ## Download Tor bulk exit list.
  wget -T3 -q https://check.torproject.org/torbulkexitlist -O "${rulesLocation}"/torbulkexit.ip || rm -f "${rulesLocation}"/torbulkexit.ip
 
- # ## Populate the Tor node.
+ # ## Populate the Tor nodes.
  shTorList=$(ipset list tor-nodes 2>/dev/null | wc -l)
 
  if [ "${shTorList}" -le 2 ]; then

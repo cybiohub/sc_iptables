@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2025  Cybionet - Ugly Codes Division
 # *
 # * File:               ccgraph.sh
-# * Version:            0.1.0
+# * Version:            0.1.1
 # *
 # * Description:        Tool to graph number of hits by country in iptables log.
 # *
 # * Creation: January 31, 2022
-# * Change:   February 04, 2022
+# * Change:   April 18, 2025
 # *
 # * **************************************************************************
 
@@ -23,7 +23,7 @@ appYear=$(date +%Y)
 
 # ## Application informations.
 appHeader="(c) 2004-${appYear}  Cybionet - Ugly Codes Division"
-readonly appVersion='0.1.0'
+readonly appVersion='0.1.1'
 
 
 #############################################################################################
@@ -42,7 +42,7 @@ function logEntryInfo() {
 function genGraph() {
 
  # ## Sort and count attacks.
- attacks=$(cat /var/log/iptables.log | awk -F ':' '{print $5}' | grep -v ':\|=\|AUTH' | sort | uniq -c)
+ attacks=$(cat /var/log/iptables.log | grep -v 'message repeated' | awk -F ':' '{print $5}' | grep -v ':\|=\|AUTH' | sort | uniq -c)
 
  # ## Character used to print bar chart.
  barchr='+'

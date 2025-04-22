@@ -128,6 +128,15 @@ function xtGeoipCheck() {
 }
 
 
+# ########################
+# ## TOOLS
+
+function ccGeoipTools() {
+  cp ./addons/geoip/tools/ccstats.sh /root/admin_scripts/services/iptables/
+  cp ./addons/geoip/tools/ccgraph.sh /root/admin_scripts/services/iptables/
+}
+
+
 # #################################################################
 # ## EXECUTION
 
@@ -147,6 +156,9 @@ echo -e "\n\e[34m[GEOIP DATABASE]\e[0m"
 geoipUpd
 geoipCron
 ccFilesCheck
+
+# ## Country code tools.
+ccGeoipTool
 
 
 # #################################################################

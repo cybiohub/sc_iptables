@@ -1,3 +1,24 @@
+V1.2.3 - 2025-04-18
+## Added
+  - Wazuh support.
+  - Optimization of additional protections.
+  - Add a SMTP/S Authentication port and activation.
+
+## Change
+  - Merge the two redlist.sh tools.
+  - Rename some port variables.
+
+## Fixed
+  - Correction of the logrotate file configuration file for iptables.
+  - Fix the attgraph.sh script result by excluding "message repeated".
+  - Correction in the management of the GeoIP module.
+
+
+V1.2.2 - 2025-04-03
+## Change
+  - Removed country.sh script from GeoIP addons.
+
+
 V1.2.1 - 2024-08-22
 ## Fixed
  - NTP port added in default outbound rule.
