@@ -75,3 +75,14 @@ iptables -A INPUT -m iprange --src-range 198.235.24.0-198.235.24.255 -j DROP
 iptables -A INPUT -m iprange --src-range 198.235.31.0-198.235.31.255 -j LOG --log-prefix "IPTABLES: PaloAlto 31: "
 iptables -A INPUT -m iprange --src-range 198.235.31.0-198.235.31.255 -j DROP
 
+
+# #######################################################
+# ## Internet Measurement
+iptables -A INPUT -s 64.227.109.89 -j LOG --log-prefix "IPTABLES: NetMesurement 64: "
+iptables -A INPUT -s 64.227.109.89 -j DROP
+
+iptables -A INPUT -s 159.65.219.252 -j LOG --log-prefix "IPTABLES: NetMesurement 159: "
+iptables -A INPUT -s 159.65.219.252 -j DROP
+
+iptables -A INPUT -s 162.243.208.127 -j LOG --log-prefix "IPTABLES: NetMesurement 162: "
+iptables -A INPUT -s 162.243.208.127 -j DROP

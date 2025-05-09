@@ -1,3 +1,11 @@
+V1.2.4 - 2025-05-08
+## Added
+  - Add deny IP from Internet Measurement scanner.
+
+## Fixed
+  - Correction of the SSH service output rule who was duplicated during initialisation.
+
+
 V1.2.3 - 2025-04-18
 ## Added
   - Wazuh support.

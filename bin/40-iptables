@@ -5,12 +5,12 @@
 # * Author:             (c) 2004-2025  Cybionet - Ugly Codes Division
 # *
 # * File:               40-iptables
-# * Version:            1.2.3
+# * Version:            1.2.4
 # *
 # * Description:        Script to customize IPv4 firewall rules.
 # *
 # * Creation: December 02, 2013
-# * Change:   April 19, 2025
+# * Change:   May 01, 2025
 # *
 # ****************************************************************************
 # *
@@ -277,10 +277,16 @@ else
       iptables -A INPUT -p tcp -m tcp --dport 993 -m geoip ! --source-country "${allowCountry}" -j DROP
     fi
 
-    if [ "${SMTPS}" -eq 1 ]; then
-      # ## GeoIP - SMTP/S.
-      iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP/S: "
-      iptables -A INPUT -p tcp -m tcp --dport 645 -m geoip ! --source-country "${allowCountry}" -j DROP
+    if [ "${SMTPSSLTLS}" -eq 1 ]; then
+      # ## GeoIP - SMTP/S SSL/TLS.
+      iptables -A INPUT -p tcp -m tcp --dport 465 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP-SSLTLS: "
+      iptables -A INPUT -p tcp -m tcp --dport 465 -m geoip ! --source-country "${allowCountry}" -j DROP
+    fi
+
+    if [ "${SMTPSSTARTTLS}" -eq 1 ]; then
+      # ## GeoIP - SMTP/S STARTTLS.
+      iptables -A INPUT -p tcp -m tcp --dport 587 -m geoip ! --source-country "${allowCountry}" -j LOG --log-prefix "IPTABLES: Country SMTP-STARTTLS: "
+      iptables -A INPUT -p tcp -m tcp --dport 587 -m geoip ! --source-country "${allowCountry}" -j DROP
     fi
 
     if [ "${HTTP}" -eq 1 ]; then
@@ -617,12 +623,12 @@ if [ "${RESTRICT}" -eq 1 ]; then
   for allowIp in "${AUTHORIZEDIP[@]}"; do
     # ## SSH rules with extra precaution so that connections work even if the script crashes while running.
     iptables -A INPUT -s "${allowIp}" -d "${LAN}" -p tcp -m tcp --dport "${SSHPORT}" -m state --state NEW,ESTABLISHED -j ACCEPT
-    iptables -A OUTPUT -p tcp --sport "${SSHPORT}" -m state --state ESTABLISHED -j ACCEPT
   done
+    iptables -A OUTPUT -p tcp --sport "${SSHPORT}" -m state --state ESTABLISHED -j ACCEPT
 else
   # ## SSH rules with extra precaution so that connections work even if the script crashes while running.
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport "${SSHPORT}" -m state --state NEW,ESTABLISHED -j ACCEPT
-  #iptables -A OUTPUT -p tcp --sport "${SSHPORT}" -m state --state ESTABLISHED -j ACCEPT
+  iptables -A OUTPUT -p tcp --sport "${SSHPORT}" -m state --state ESTABLISHED -j ACCEPT
 fi
 
 # ## VNC rules.
@@ -741,16 +747,16 @@ if [ "${SMTP}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 25 -j ACCEPT
 fi
 
+if [ "${SMTPSSLTLS}" -eq 1 ]; then
+  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 465 -j ACCEPT
+fi
+
 # ## SMTP/S (STARTTLS) - SMTP Client with MSA rules.
 if [ "${SMTPSTARTTLS}" -eq 1 ]; then
   iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 587 -j ACCEPT
 fi
 
 # ## SMTP/S (SSL/TLS) - SMTP Client with SMTPS rules.
-if [ "${SMTPSSLTLS}" -eq 1 ]; then
-  iptables -A INPUT -d "${LAN}" -p tcp -m tcp --dport 465 -j ACCEPT
-fi
-
 # ## SMTP/S (CUSTOM) - Custom SMTP Client port with AUTH rules.
 if [ "${SMTPSAUTH}" -eq 1 ]; then
   if [ "${RESTRICT}" -eq 1 ]; then
